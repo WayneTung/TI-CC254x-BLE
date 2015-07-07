@@ -46,6 +46,10 @@
 #include "OSAL_PwrMgr.h"
 
 #include "OnBoard.h"
+#include "hal_adc.h"
+#include "hal_led.h"
+#include "hal_key.h"
+#include "hal_lcd.h"
 
 #include "gatt.h"
 
@@ -65,6 +69,7 @@
 #if defined (SERIAL_INTERFACE)
 #include "serialInterface.h"
 #endif
+
 /*********************************************************************
  * MACROS
  */
@@ -203,6 +208,10 @@ static void peripheralStateNotificationCB( gaprole_States_t newState );
 static void performPeriodicTask( void );
 static void simpleProfileChangeCB( uint8 paramID );
 
+
+#if (defined HAL_LCD) && (HAL_LCD == TRUE)
+static char *bdAddr2Str ( uint8 *pAddr );
+#endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 /*********************************************************************
  * PROFILE CALLBACKS
  */
@@ -337,6 +346,21 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     sendSerialString( "BLE Peripheral\r\n", 16 );
 #endif
 
+
+#if (defined HAL_LCD) && (HAL_LCD == TRUE)
+
+#if defined FEATURE_OAD
+  #if defined (HAL_IMAGE_A)
+    HalLcdWriteStringValue( "BLE Peri-A", OAD_VER_NUM( _imgHdr.ver ), 16, HAL_LCD_LINE_1 );
+  #else
+    HalLcdWriteStringValue( "BLE Peri-B", OAD_VER_NUM( _imgHdr.ver ), 16, HAL_LCD_LINE_1 );
+  #endif // HAL_IMAGE_A
+#else
+  HalLcdWriteString( "BLE Peripheral", HAL_LCD_LINE_1 );
+#endif // FEATURE_OAD
+
+#endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+
     // Register callback with SimpleGATTprofile
     VOID SimpleProfile_RegisterAppCBs( &simpleBLEPeripheral_SimpleProfileCBs );
 
@@ -389,6 +413,9 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
 
     if ( events & SBP_START_DEVICE_EVT )
     {
+        // << Wayne >> << -23dB TX Power >> ++
+        HCI_EXT_SetTxPowerCmd(LL_EXT_TX_POWER_MINUS_23_DBM);
+        // << Wayne >> << -23dB TX Power >> --
         // Start the Device
         VOID GAPRole_StartDevice( &simpleBLEPeripheral_PeripheralCBs );
 
@@ -480,28 +507,40 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
         systemId[5] = ownAddress[3];
 
         DevInfo_SetParameter(DEVINFO_SYSTEM_ID, DEVINFO_SYSTEM_ID_LEN, systemId);
-
-#if defined (SERIAL_INTERFACE)
-    sendSerialString( "State > DevInit\r\n", 17 );
-#endif
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          // Display device address
+          HalLcdWriteString( bdAddr2Str( ownAddress ),  HAL_LCD_LINE_2 );
+          HalLcdWriteString( "Initialized",  HAL_LCD_LINE_3 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+        #if defined (SERIAL_INTERFACE)
+            sendSerialString( "State > DevInit\r\n", 17 );
+        #endif
 
     }
     break;
 
     case GAPROLE_ADVERTISING:
     {
-#if defined (SERIAL_INTERFACE)
-        sendSerialString( "State > Advertising...\r\n", 24 );
-#endif
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( "Advertising",  HAL_LCD_LINE_3 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+
+        #if defined (SERIAL_INTERFACE)
+                sendSerialString( "State > Advertising...\r\n", 24 );
+        #endif
 
     }
     break;
 
     case GAPROLE_CONNECTED:
     {
-#if defined (SERIAL_INTERFACE)
-        sendSerialString( "State > Connected\r\n", 19 );
-#endif
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( "Connected",  HAL_LCD_LINE_3 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+
+        #if defined (SERIAL_INTERFACE)
+                sendSerialString( "State > Connected\r\n", 19 );
+        #endif
 
 
 #ifdef PLUS_BROADCASTER
@@ -520,26 +559,37 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
     case GAPROLE_CONNECTED_ADV:
     {
-#if defined (SERIAL_INTERFACE)
-        sendSerialString( "State > Connected Advertising\r\n", 31 );
-#endif
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( "Connected Advertising",  HAL_LCD_LINE_3 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+        #if defined (SERIAL_INTERFACE)
+                sendSerialString( "State > Connected Advertising\r\n", 31 );
+        #endif
 
     }
     break;
     case GAPROLE_WAITING:
     {
-#if defined (SERIAL_INTERFACE)
-        sendSerialString( "State > Waiting\r\n", 17 );
-#endif
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( "Disconnected",  HAL_LCD_LINE_3 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+
+        #if defined (SERIAL_INTERFACE)
+                sendSerialString( "State > Waiting\r\n", 17 );
+        #endif
 
     }
     break;
 
     case GAPROLE_WAITING_AFTER_TIMEOUT:
     {
-#if defined (SERIAL_INTERFACE)
-        sendSerialString( "State > Time Out\r\n", 18 );
-#endif
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( "Timed Out",  HAL_LCD_LINE_3 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+
+        #if defined (SERIAL_INTERFACE)
+                sendSerialString( "State > Time Out\r\n", 18 );
+        #endif
 
 
 #ifdef PLUS_BROADCASTER
@@ -551,15 +601,22 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
     case GAPROLE_ERROR:
     {
-#if defined (SERIAL_INTERFACE)
-        sendSerialString( "State > Error\r\n", 15 );
-#endif
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( "Error",  HAL_LCD_LINE_3 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+
+        #if defined (SERIAL_INTERFACE)
+                sendSerialString( "State > Error\r\n", 15 );
+        #endif
 
     }
     break;
 
     default:
     {
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( "",  HAL_LCD_LINE_3 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
     }
     break;
@@ -679,6 +736,42 @@ uint8 Application_StopAdvertise()
     return FAILURE;
 }
 
+
+/*********************************************************************
+*********************************************************************/
+#if (defined HAL_LCD) && (HAL_LCD == TRUE)
+/*********************************************************************
+ * @fn      bdAddr2Str
+ *
+ * @brief   Convert Bluetooth address to string. Only needed when
+ *          LCD display is used.
+ *
+ * @return  none
+ */
+char *bdAddr2Str( uint8 *pAddr )
+{
+  uint8       i;
+  char        hex[] = "0123456789ABCDEF";
+  static char str[B_ADDR_STR_LEN];
+  char        *pStr = str;
+
+  *pStr++ = '0';
+  *pStr++ = 'x';
+
+  // Start from end of addr
+  pAddr += B_ADDR_LEN;
+
+  for ( i = B_ADDR_LEN; i > 0; i-- )
+  {
+    *pStr++ = hex[*--pAddr >> 4];
+    *pStr++ = hex[*pAddr & 0x0F];
+  }
+
+  *pStr = 0;
+
+  return str;
+}
+#endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
 /*********************************************************************
 *********************************************************************/
