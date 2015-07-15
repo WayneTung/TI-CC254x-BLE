@@ -770,6 +770,14 @@ char *bdAddr2Str( uint8 *pAddr )
 }
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
+uint8 dBCommand_Service(uint8 *pCmd)
+{
+    if(osal_memcmp( pCmd, DBCMD_COMFIRM_TICKET, DBCMD_COMFIRM_TICKET_LEN))
+    {
+        sendSerialString( "State > CMPOK\r\n", 15 );
+        repeatCmdSendData("s,et,01,cfm,0010,e",18);
+    }
+}
 // << Wayne >> << RepeatCmd  >> ++
 static bool repeatCmdSendData(uint8* data, uint8 len)
 {

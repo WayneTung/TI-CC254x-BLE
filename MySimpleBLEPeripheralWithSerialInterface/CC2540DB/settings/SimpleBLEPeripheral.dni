@@ -9,7 +9,11 @@ TriggerName=main
 LimitSize=0
 ByteLimit=50
 [DebugChecksum]
+<<<<<<< HEAD
 Checksum=107388023
+=======
+Checksum=697904275
+>>>>>>> dBConfirmTicketCmmand
 [CallStack]
 ShowArgs=0
 [Disassembly]
