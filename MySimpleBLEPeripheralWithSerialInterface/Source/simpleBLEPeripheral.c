@@ -264,7 +264,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     {
 
         //first turn off advertisement
-        uint8 initial_advertising_enable = FALSE;
+        uint8 initial_advertising_enable = TRUE;
 
         // By setting this to zero, the device will go into the waiting state after
         // being discoverable for 30.72 second, and will not being advertising again
@@ -329,7 +329,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
     // Setup the SimpleProfile Characteristic Values
     {
-        uint8 charValue1 = 1;
+        uint8 charValue1[SIMPLEPROFILE_CHAR1_LEN]  =  dB_DevID(0x0001) ;
         uint8 charValue2 = 2;
         uint8 charValue3 = 3;
         uint8 charValue4 = 4;

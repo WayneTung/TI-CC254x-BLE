@@ -58,6 +58,11 @@ extern "C"
 #define SBP_START_DEVICE_EVT                              0x0001
 #define SBP_PERIODIC_EVT                                  0x0002
 
+
+// << Wayne >> << 128-bit UUID >> ++
+#define dB_DevID(id)       {0xFF, 0xDB, HI_UINT16(id), LO_UINT16(id), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+// << Wayne >> << 128-bit UUID >> --
+
 /*********************************************************************
  * MACROS
  */
