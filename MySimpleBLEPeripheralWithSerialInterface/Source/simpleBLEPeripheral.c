@@ -22,7 +22,7 @@
   its documentation for any purpose.
 
   YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-  PROVIDED ìAS ISî WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  PROVIDED ‚ÄúAS IS‚Äù WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
   INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
   NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
   TEXAS INSTRUMENTS OR ITS LICENSORS BE LIABLE OR OBLIGATED UNDER CONTRACT,
@@ -85,23 +85,23 @@
 #define DEFAULT_ADVERTISING_INTERVAL          160
 
 // Whether to enable automatic parameter update request when a connection is formed
-#define DEFAULT_ENABLE_UPDATE_REQUEST         FALSE
+#define DEFAULT_ENABLE_UPDATE_REQUEST         TRUE
 
 // Limited discoverable mode advertises for 30.72s, and then stops
 // General discoverable mode advertises indefinitely
 #define DEFAULT_DISCOVERABLE_MODE             GAP_ADTYPE_FLAGS_GENERAL
 
 // Minimum connection interval (units of 1.25ms, 80=100ms) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_MIN_CONN_INTERVAL     80
+#define DEFAULT_DESIRED_MIN_CONN_INTERVAL     8
 
 // Maximum connection interval (units of 1.25ms, 800=1000ms) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_MAX_CONN_INTERVAL     800
+#define DEFAULT_DESIRED_MAX_CONN_INTERVAL     8
 
 // Slave latency to use if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_SLAVE_LATENCY         0
+#define DEFAULT_DESIRED_SLAVE_LATENCY         50
 
 // Supervision timeout value (units of 10ms, 1000=10s) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_CONN_TIMEOUT          1000
+#define DEFAULT_DESIRED_CONN_TIMEOUT          20000
 
 // Connection Pause Peripheral time value (in seconds)
 #define DEFAULT_CONN_PAUSE_PERIPHERAL         6
@@ -264,12 +264,12 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     {
 
         //first turn off advertisement
-        uint8 initial_advertising_enable = FALSE;
+        uint8 initial_advertising_enable = TRUE;
 
         // By setting this to zero, the device will go into the waiting state after
         // being discoverable for 30.72 second, and will not being advertising again
         // until the enabler is set back to TRUE
-        uint16 gapRole_AdvertOffTime = 0;
+        uint16 gapRole_AdvertOffTime = 1;
 
         uint8 enable_update_request = DEFAULT_ENABLE_UPDATE_REQUEST;
         uint16 desired_min_interval = DEFAULT_DESIRED_MIN_CONN_INTERVAL;
@@ -277,6 +277,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
         uint16 desired_slave_latency = DEFAULT_DESIRED_SLAVE_LATENCY;
         uint16 desired_conn_timeout = DEFAULT_DESIRED_CONN_TIMEOUT;
 
+        GAP_SetParamValue(TGAP_GEN_DISC_ADV_MIN,10000);
         // Set the GAP Role Parameters
         GAPRole_SetParameter( GAPROLE_ADVERT_ENABLED, sizeof( uint8 ), &initial_advertising_enable );
         GAPRole_SetParameter( GAPROLE_ADVERT_OFF_TIME, sizeof( uint16 ), &gapRole_AdvertOffTime );
