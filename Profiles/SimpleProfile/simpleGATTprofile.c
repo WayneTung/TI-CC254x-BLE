@@ -130,7 +130,7 @@ static CONST gattAttrType_t simpleProfileService = { ATT_BT_UUID_SIZE, simplePro
 static uint8 simpleProfileChar1Props = GATT_PROP_READ;
 
 // Characteristic 1 Value
-static uint8 simpleProfileChar1[SIMPLEPROFILE_CHAR1_LEN] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static uint8 simpleProfileChar1[SIMPLEPROFILE_CHAR1_LEN] = {0};
 
 // Simple Profile Characteristic 1 User Description
 static uint8 simpleProfileChar1UserDesp[7] = "0xFF01\0";
@@ -150,7 +150,7 @@ static uint8 simpleProfileChar2UserDesp[17] = "Characteristic 2\0";
 static uint8 simpleProfileChar3Props = GATT_PROP_WRITE;
 
 // Characteristic 3 Value
-static uint8 simpleProfileChar3[SIMPLEPROFILE_CHAR3_LEN] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static uint8 simpleProfileChar3[SIMPLEPROFILE_CHAR3_LEN] = {0};
 
 // Simple Profile Characteristic 3 User Description
 static uint8 simpleProfileChar3UserDesp[7] = "0xDB03\0";
@@ -432,7 +432,7 @@ bStatus_t SimpleProfile_SetParameter( uint8 param, uint8 len, void *value )
   switch ( param )
   {
     case SIMPLEPROFILE_CHAR1:
-      if ( len == sizeof ( uint8 ) ) 
+      if ( len == SIMPLEPROFILE_CHAR1_LEN ) 
       {
         VOID osal_memcpy( simpleProfileChar1, value, SIMPLEPROFILE_CHAR1_LEN );
       }
@@ -454,7 +454,7 @@ bStatus_t SimpleProfile_SetParameter( uint8 param, uint8 len, void *value )
       break;
 
     case SIMPLEPROFILE_CHAR3:
-      if ( len == sizeof ( uint8 ) ) 
+      if ( len == SIMPLEPROFILE_CHAR3_LEN ) 
       {
         VOID osal_memcpy( simpleProfileChar3, value, SIMPLEPROFILE_CHAR3_LEN );
       }
@@ -654,33 +654,7 @@ static bStatus_t simpleProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *
     // 16-bit UUID
     uint16 uuid = BUILD_UINT16( pAttr->type.uuid[0], pAttr->type.uuid[1]);
     switch ( uuid )
-    {
-      case SIMPLEPROFILE_CHAR1_UUID:
-      
-        //Validate the value
-        // Make sure it's not a blob oper
-        if ( offset == 0 )
-        {
-          if ( len != 1 )
-          {
-            status = ATT_ERR_INVALID_VALUE_SIZE;
-          }
-        }
-        else
-        {
-          status = ATT_ERR_ATTR_NOT_LONG;
-        }
-        
-        //Write the value
-        if ( status == SUCCESS )
-        {
-          uint8 *pCurValue = (uint8 *)pAttr->pValue;        
-          *pCurValue = pValue[0];
-          
-          notifyApp = SIMPLEPROFILE_CHAR1;
-        }
-        
-        break;      
+    {   
       case SIMPLEPROFILE_CHAR3_UUID:
 
         //Validate the value
@@ -704,7 +678,7 @@ static bStatus_t simpleProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *
           *pCurValue = pValue[0];
           osal_memcpy(pCurValue, pValue, len);
           
-          notifyApp = SIMPLEPROFILE_CHAR3;           
+          notifyApp = SIMPLEPROFILE_CHAR3;
         }
              
         break;

@@ -85,7 +85,7 @@
 #define DEFAULT_ADVERTISING_INTERVAL          160
 
 // Whether to enable automatic parameter update request when a connection is formed
-#define DEFAULT_ENABLE_UPDATE_REQUEST         FALSE
+#define DEFAULT_ENABLE_UPDATE_REQUEST         TRUE
 
 // Limited discoverable mode advertises for 30.72s, and then stops
 // General discoverable mode advertises indefinitely
@@ -334,7 +334,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
         uint8 charValue3 = 3;
         uint8 charValue4 = 4;
         uint8 charValue5[SIMPLEPROFILE_CHAR5_LEN] = { 1, 2, 3, 4, 5 };
-        SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR1, sizeof ( uint8 ), &charValue1 );
+        SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR1, SIMPLEPROFILE_CHAR1_LEN, charValue1 );
         SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, sizeof ( uint8 ), &charValue2 );
         SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR3, sizeof ( uint8 ), &charValue3 );
         SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof ( uint8 ), &charValue4 );
@@ -414,7 +414,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     if ( events & SBP_START_DEVICE_EVT )
     {
         // << Wayne >> << -23dB TX Power >> ++
-        HCI_EXT_SetTxPowerCmd(LL_EXT_TX_POWER_MINUS_23_DBM);
+        //HCI_EXT_SetTxPowerCmd(LL_EXT_TX_POWER_MINUS_23_DBM);
         // << Wayne >> << -23dB TX Power >> --
         // Start the Device
         VOID GAPRole_StartDevice( &simpleBLEPeripheral_PeripheralCBs );
@@ -645,14 +645,16 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
  */
 static void performPeriodicTask( void )
 {
-    uint8 valueToCopy;
-    uint8 stat;
 
-    // Call to retrieve the value of the third characteristic in the profile
-    stat = SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &valueToCopy);
+    uint8 valueToCopy = 0x08;
+    //uint8 stat;
 
-    if( stat == SUCCESS )
-    {
+    // 
+    //Call to retrieve the value of the third characteristic in the profile
+    //stat = SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &valueToCopy);
+
+    //if( stat == SUCCESS )
+    //{
         /*
          * Call to set that value of the fourth characteristic in the profile. Note
          * that if notifications of the fourth characteristic have been enabled by
@@ -660,7 +662,7 @@ static void performPeriodicTask( void )
          * function is called.
          */
         SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof(uint8), &valueToCopy);
-    }
+    //}
 }
 
 /*********************************************************************
@@ -674,17 +676,17 @@ static void performPeriodicTask( void )
  */
 static void simpleProfileChangeCB( uint8 paramID )
 {
-    uint8 newValue;
+    uint8 data[20];
 
     switch( paramID )
     {
     case SIMPLEPROFILE_CHAR1:
-        SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, &newValue );
+        //SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, &newValue );
 
         break;
 
     case SIMPLEPROFILE_CHAR3:
-        SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &newValue );
+        SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &data );
 
         break;
 
