@@ -140,28 +140,16 @@ static gaprole_States_t gapProfileState = GAPROLE_INIT;
 // GAP - SCAN RSP data (max size = 31 bytes)
 static uint8 scanRspData[] =
 {
-    // complete name
-    0x14,   // length of this data
-    GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-    0x53,   // 'S'
-    0x69,   // 'i'
-    0x6d,   // 'm'
-    0x70,   // 'p'
-    0x6c,   // 'l'
-    0x65,   // 'e'
-    0x42,   // 'B'
-    0x4c,   // 'L'
-    0x45,   // 'E'
-    0x50,   // 'P'
-    0x65,   // 'e'
-    0x72,   // 'r'
-    0x69,   // 'i'
-    0x70,   // 'p'
-    0x68,   // 'h'
-    0x65,   // 'e'
-    0x72,   // 'r'
-    0x61,   // 'a'
-    0x6c,   // 'l'
+  // complete name
+  0x08,   // length of this data
+  GAP_ADTYPE_LOCAL_NAME_COMPLETE,
+  0x64,   // 'd'
+  0x42,   // 'B'
+  0x2E,   // '.'
+  0x44,   // 'D'
+  0x65,   // 'e'
+  0x76,   // 'v'
+  0x73,   // 's'
 
     // connection interval range
     0x05,   // length of this data
@@ -190,15 +178,15 @@ static uint8 advertData[] =
 
     // service UUID, to notify central devices what services are included
     // in this peripheral
-    0x03,   // length of this data
-    GAP_ADTYPE_16BIT_MORE,      // some of the UUID's, but not all
-    LO_UINT16( SIMPLEPROFILE_SERV_UUID ),
-    HI_UINT16( SIMPLEPROFILE_SERV_UUID ),
-
+  // << Wayne >> << Advert UUID >> ++
+  0x11,   // length of this data
+  GAP_ADTYPE_128BIT_MORE,      // some of the UUID's, but not all
+  dB_UUID(0x0001,0x0001,0x0001),   // Company ID, Area ID, Store&Shop ID
+  /// << Wayne >> << Advert UUID >> --
 };
 
 // GAP GATT Attributes
-static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "Simple BLE Peripheral";
+static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "dB.Devs";
 
 /*********************************************************************
  * LOCAL FUNCTIONS
