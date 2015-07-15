@@ -208,6 +208,9 @@ static void peripheralStateNotificationCB( gaprole_States_t newState );
 static void performPeriodicTask( void );
 static void simpleProfileChangeCB( uint8 paramID );
 
+// << Wayne >> << RepeatCmd  >> ++
+static bool repeatCmdSendData(uint8* data, uint8 len);
+// << Wayne >> << RepeatCmd  >>  --
 
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)
 static char *bdAddr2Str ( uint8 *pAddr );
@@ -646,7 +649,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 static void performPeriodicTask( void )
 {
 
-    uint8 valueToCopy = 0x08;
+    //uint8 valueToCopy = 0x08;
     //uint8 stat;
 
     // 
@@ -661,7 +664,7 @@ static void performPeriodicTask( void )
          * a GATT client device, then a notification will be sent every time this
          * function is called.
          */
-        SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof(uint8), &valueToCopy);
+    //   SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof(uint8), &valueToCopy);
     //}
 }
 
@@ -677,7 +680,7 @@ static void performPeriodicTask( void )
 static void simpleProfileChangeCB( uint8 paramID )
 {
     uint8 data[20];
-
+    uint8 len;
     switch( paramID )
     {
     case SIMPLEPROFILE_CHAR1:
@@ -687,7 +690,11 @@ static void simpleProfileChangeCB( uint8 paramID )
 
     case SIMPLEPROFILE_CHAR3:
         SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &data );
-
+        len = data[0];
+          // << Wayne >> << RepeatCmd >> ++
+          repeatCmdSendData(&data[1], len);
+          // << Wayne >> << RepeatCmd >> --
+        sendSerialString(&data[1], len);
         break;
 
     default:
@@ -775,5 +782,22 @@ char *bdAddr2Str( uint8 *pAddr )
 }
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
+// << Wayne >> << RepeatCmd  >> ++
+static bool repeatCmdSendData(uint8* data, uint8 len)
+{
+   attHandleValueNoti_t noti;      
+  //dummy handle
+  noti.handle = 0x2E;
+  noti.len = len;
+  uint8 i;
+
+  for (i= 0; i < len; i++)
+  {
+    noti.value[i] = data[i];
+  }
+
+  return (!GATT_Notification(0, &noti, FALSE));
+}
+// << Wayne >> << RepeatCmd  >> --
 /*********************************************************************
 *********************************************************************/
