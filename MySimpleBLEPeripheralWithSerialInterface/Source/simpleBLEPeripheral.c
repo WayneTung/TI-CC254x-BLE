@@ -199,7 +199,9 @@ static void simpleProfileChangeCB( uint8 paramID );
 // << Wayne >> << RepeatCmd  >> ++
 static bool repeatCmdSendData(uint8* data, uint8 len);
 // << Wayne >> << RepeatCmd  >>  --
-
+// << Wayne >> << dBCmd Service  >> ++
+uint8 dBCommand_Service(uint8 *pCmd);
+// << Wayne >> << dBCmd Service  >> --
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)
 static char *bdAddr2Str ( uint8 *pAddr );
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -679,10 +681,15 @@ static void simpleProfileChangeCB( uint8 paramID )
     case SIMPLEPROFILE_CHAR3:
         SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &data );
         len = data[0];
-          // << Wayne >> << RepeatCmd >> ++
-          repeatCmdSendData(&data[1], len);
-          // << Wayne >> << RepeatCmd >> --
         sendSerialString(&data[1], len);
+        // << Wayne >> << RepeatCmd >> ++
+        if(repeatCmdSendData(&data[1], len))
+        // << Wayne >> << RepeatCmd >> --
+        {
+            // << Wayne >> << dBCmd Service  >> ++
+            dBCommand_Service(&data[1]);
+            // << Wayne >> << dBCmd Service  >> --
+        }
         break;
 
     default:
@@ -770,14 +777,15 @@ char *bdAddr2Str( uint8 *pAddr )
 }
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
+// << Wayne >> << dBCmd Service  >> ++
 uint8 dBCommand_Service(uint8 *pCmd)
 {
     if(osal_memcmp( pCmd, DBCMD_COMFIRM_TICKET, DBCMD_COMFIRM_TICKET_LEN))
     {
-        sendSerialString( "State > CMPOK\r\n", 15 );
-        repeatCmdSendData("s,et,01,cfm,0010,e",18);
+        repeatCmdSendData("s,et,01,cfm,0005,e",18);
     }
 }
+// << Wayne >> << dBCmd Service  >> --
 // << Wayne >> << RepeatCmd  >> ++
 static bool repeatCmdSendData(uint8* data, uint8 len)
 {
