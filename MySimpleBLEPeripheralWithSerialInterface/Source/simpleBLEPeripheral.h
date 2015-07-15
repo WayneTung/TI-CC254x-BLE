@@ -59,6 +59,10 @@ extern "C"
 #define SBP_PERIODIC_EVT                                  0x0002
 
 
+// << Wayne >> << dBCmd >> ++
+#define DBCMD_COMFIRM_TICKET              "s,et,01,dic,"
+#define DBCMD_COMFIRM_TICKET_LEN      12
+// << Wayne >> << dBCmd >> --
 // << Wayne >> << 128-bit UUID >> ++
 #define dB_DevID(id)       {0xFF, 0xDB, HI_UINT16(id), LO_UINT16(id), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 // << Wayne >> << 128-bit UUID >> --
