@@ -137,6 +137,10 @@ static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event pr
 
 static gaprole_States_t gapProfileState = GAPROLE_INIT;
 
+// << Wayne >> << Exchanging Take >> ++
+static uint16 dbExchangeCounter = 0;
+// << Wayne >> << Exchanging Take >> --
+
 // GAP - SCAN RSP data (max size = 31 bytes)
 static uint8 scanRspData[] =
 {
@@ -202,6 +206,12 @@ static bool repeatCmdSendData(uint8* data, uint8 len);
 // << Wayne >> << dBCmd Service  >> ++
 uint8 dBCommand_Service(uint8 *pCmd);
 // << Wayne >> << dBCmd Service  >> --
+// << Wayne >> << Digits To Ascii  >> ++
+uint8 Single_digits_to_ascii(uint16 vaule);
+uint8 Tens_digits_to_ascii(uint16 vaule);
+uint8 Hundreds_digit_to_ascii(uint16 vaule);
+// << Wayne >> << Digits To Ascii  >> --
+
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)
 static char *bdAddr2Str ( uint8 *pAddr );
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -638,7 +648,6 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
  */
 static void performPeriodicTask( void )
 {
-
     //uint8 valueToCopy = 0x08;
     //uint8 stat;
 
@@ -783,6 +792,20 @@ uint8 dBCommand_Service(uint8 *pCmd)
     if(osal_memcmp( pCmd, DBCMD_COMFIRM_TICKET, DBCMD_COMFIRM_TICKET_LEN))
     {
         repeatCmdSendData("s,et,01,cfm,0005,e",18);
+        // << Wayne >> << Exchanging Take >> ++
+        dbExchangeCounter++;
+        // << Wayne >> << Exchanging Take >> --
+    }
+    else if(osal_memcmp( pCmd, DBCMD_READ_EXCHANGE_NUMBER, DBCMD_READ_EXCHANGE_NUMBER_LEN))
+    {
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( "Read",  HAL_LCD_LINE_5 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+        pCmd[12] = 0x30;
+        pCmd[13] = Hundreds_digit_to_ascii(dbExchangeCounter);
+        pCmd[14] = Tens_digits_to_ascii(dbExchangeCounter);
+        pCmd[15] = Single_digits_to_ascii(dbExchangeCounter);
+        repeatCmdSendData(pCmd,18);
     }
 }
 // << Wayne >> << dBCmd Service  >> --
@@ -802,6 +825,32 @@ static bool repeatCmdSendData(uint8* data, uint8 len)
 
   return (!GATT_Notification(0, &noti, FALSE));
 }
-// << Wayne >> << RepeatCmd  >> --
+// << Wayne >> << RepeatCmd  >> -- 
+// << Wayne >> << Digits To Ascii  >> ++
+uint8 Single_digits_to_ascii(uint16 vaule)
+{
+     vaule = (vaule % 10) + '0';
+    return vaule;
+}
+
+uint8 Tens_digits_to_ascii(uint16 vaule)
+{
+    if(vaule >= 100)
+    {  
+        vaule = vaule %100;
+        vaule = (vaule / 10) + '0';
+    }
+    else{
+        vaule = (vaule / 10) + '0';
+    }
+    return vaule;
+}
+
+uint8 Hundreds_digit_to_ascii(uint16 vaule)
+{
+    vaule = (vaule / 100) + '0';
+    return vaule;
+}
+// << Wayne >> << Digits To Ascii  >> --
 /*********************************************************************
 *********************************************************************/
