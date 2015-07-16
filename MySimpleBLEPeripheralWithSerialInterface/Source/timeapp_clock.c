@@ -149,7 +149,7 @@ void timeAppClockDisplay( void )
   
   _ltoa( time.year, (uint8 *) p, 10 );
   
-  LCD_WRITE_STRING( displayBuf, HAL_LCD_LINE_3 );  
+  LCD_WRITE_STRING( displayBuf, HAL_LCD_LINE_4 );  
 }
 
 /*********************************************************************

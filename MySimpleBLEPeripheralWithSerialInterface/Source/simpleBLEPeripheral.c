@@ -117,6 +117,9 @@
 // Length of bd addr as a string
 #define B_ADDR_STR_LEN                        15
 
+ // Clock display update period in ms; set to 60 sec or less since time is displayed in minutes
+#define DEFAULT_CLOCK_UPDATE_PERIOD           10000
+
 /*********************************************************************
  * TYPEDEFS
  */
@@ -381,6 +384,10 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     //call in order to allow more CPU time for driver
     HCI_EXT_HaltDuringRfCmd(HCI_EXT_HALT_DURING_RF_DISABLE);
 
+  // << Wayne >> << Clock >> ++
+  // Start clock update timer
+  osal_start_timerEx( simpleBLEPeripheral_TaskID, CLOCK_UPDATE_EVT, DEFAULT_CLOCK_UPDATE_PERIOD );
+  // << Wayne >> << Clock >> --
 }
 
 /*********************************************************************
@@ -420,7 +427,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     if ( events & SBP_START_DEVICE_EVT )
     {
         // << Wayne >> << -23dB TX Power >> ++
-        //HCI_EXT_SetTxPowerCmd(LL_EXT_TX_POWER_MINUS_23_DBM);
+        HCI_EXT_SetTxPowerCmd(LL_EXT_TX_POWER_MINUS_23_DBM);
         // << Wayne >> << -23dB TX Power >> --
         // Start the Device
         VOID GAPRole_StartDevice( &simpleBLEPeripheral_PeripheralCBs );
@@ -448,6 +455,17 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
         return (events ^ SBP_PERIODIC_EVT);
     }
 
+    // << Wayne >> << Clock >> ++
+    if ( events & CLOCK_UPDATE_EVT )
+    {
+        timeAppClockDisplay();
+
+        // Restart clock tick timer
+        osal_start_timerEx( simpleBLEPeripheral_TaskID, CLOCK_UPDATE_EVT, DEFAULT_CLOCK_UPDATE_PERIOD );
+
+        return (events ^ CLOCK_UPDATE_EVT);
+    }
+    // << Wayne >> << Clock >> --
     // Discard unknown events
     return 0;
 }
@@ -651,7 +669,6 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
  */
 static void performPeriodicTask( void )
 {
-    timeAppClockDisplay();
     //uint8 valueToCopy = 0x08;
     //uint8 stat;
 
@@ -803,7 +820,7 @@ uint8 dBCommand_Service(uint8 *pCmd)
     else if(osal_memcmp( pCmd, DBCMD_READ_EXCHANGE_NUMBER, DBCMD_READ_EXCHANGE_NUMBER_LEN))
     {
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
-          HalLcdWriteString( "Read",  HAL_LCD_LINE_5 );
+          HalLcdWriteString( "ReadCounter",  HAL_LCD_LINE_6 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
         pCmd[12] = 0x30;
         pCmd[13] = Hundreds_digit_to_ascii(dbExchangeCounter);
