@@ -176,6 +176,7 @@ void timeAppClockInit( void )
  */
 void timeAppClockSet( uint8 *pData )
 {
+  /*
   UTCTimeStruct time;
   
   // Parse time service structure to OSAL time structure
@@ -198,9 +199,12 @@ void timeAppClockSet( uint8 *pData )
   time.hour = *pData++;
   time.minutes = *pData++;
   time.seconds = *pData;
-  
+  */
+  UTCTime newValue32;
+  newValue32 = BUILD_UINT32(pData[3],pData[2],pData[1],pData[0]);
   // Update OSAL time
-  osal_setClock( osal_ConvertUTCSecs( &time ) );
+  //osal_setClock( osal_ConvertUTCSecs( &time ) );
+  osal_setClock( newValue32 );
   
   timeAppClockDisplay();
 }

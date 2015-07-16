@@ -117,8 +117,10 @@
 // Length of bd addr as a string
 #define B_ADDR_STR_LEN                        15
 
+// << Wayne >> << Clock >> ++
  // Clock display update period in ms; set to 60 sec or less since time is displayed in minutes
 #define DEFAULT_CLOCK_UPDATE_PERIOD           10000
+// << Wayne >> << Clock >> --
 
 /*********************************************************************
  * TYPEDEFS
@@ -342,7 +344,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
         uint8 charValue2 = 2;
         uint8 charValue3 = 3;
         uint8 charValue4 = 4;
-        uint8 charValue5[SIMPLEPROFILE_CHAR5_LEN] = { 1, 2, 3, 4, 5 };
+        uint8 charValue5[SIMPLEPROFILE_CHAR5_LEN] = {0};
         SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR1, SIMPLEPROFILE_CHAR1_LEN, charValue1 );
         SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, sizeof ( uint8 ), &charValue2 );
         SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR3, sizeof ( uint8 ), &charValue3 );
@@ -721,7 +723,11 @@ static void simpleProfileChangeCB( uint8 paramID )
             // << Wayne >> << dBCmd Service  >> --
         }
         break;
-
+      case SIMPLEPROFILE_CHAR5:
+      {
+        SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR5, &data );
+        timeAppClockSet(&data[0]);
+      }
     default:
         // should not reach here!
         break;

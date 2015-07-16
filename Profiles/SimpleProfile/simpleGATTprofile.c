@@ -133,7 +133,7 @@ static uint8 simpleProfileChar1Props = GATT_PROP_READ;
 static uint8 simpleProfileChar1[SIMPLEPROFILE_CHAR1_LEN] = {0};
 
 // Simple Profile Characteristic 1 User Description
-static uint8 simpleProfileChar1UserDesp[7] = "0xFF01\0";
+static uint8 simpleProfileChar1UserDesp[7] = "0xDB01\0";
 
 
 // Simple Profile Characteristic 2 Properties
@@ -143,7 +143,7 @@ static uint8 simpleProfileChar2Props = GATT_PROP_READ;
 static uint8 simpleProfileChar2 = 0;
 
 // Simple Profile Characteristic 2 User Description
-static uint8 simpleProfileChar2UserDesp[17] = "Characteristic 2\0";
+static uint8 simpleProfileChar2UserDesp[7] = "0xDB02\0";
 
 
 // Simple Profile Characteristic 3 Properties
@@ -169,17 +169,17 @@ static uint8 simpleProfileChar4 = 0;
 static gattCharCfg_t simpleProfileChar4Config[GATT_MAX_NUM_CONN];
                                         
 // Simple Profile Characteristic 4 User Description
-static uint8 simpleProfileChar4UserDesp[17] = "Characteristic 4\0";
+static uint8 simpleProfileChar4UserDesp[7] = "0xDB04\0";
 
 
 // Simple Profile Characteristic 5 Properties
-static uint8 simpleProfileChar5Props = GATT_PROP_READ;
+static uint8 simpleProfileChar5Props = GATT_PROP_WRITE;
 
 // Characteristic 5 Value
-static uint8 simpleProfileChar5[SIMPLEPROFILE_CHAR5_LEN] = { 0, 0, 0, 0, 0 };
+static uint8 simpleProfileChar5[SIMPLEPROFILE_CHAR5_LEN] = {0};
 
 // Simple Profile Characteristic 5 User Description
-static uint8 simpleProfileChar5UserDesp[17] = "Characteristic 5\0";
+static uint8 simpleProfileChar5UserDesp[7] = "0xDB05\0";
 
 
 /*********************************************************************
@@ -311,7 +311,7 @@ static gattAttribute_t simpleProfileAttrTbl[SERVAPP_NUM_ATTR_SUPPORTED] =
       // Characteristic Value 5
       { 
         { ATT_BT_UUID_SIZE, simpleProfilechar5UUID },
-        GATT_PERMIT_AUTHEN_READ, 
+        GATT_PERMIT_WRITE, 
         0, 
         simpleProfileChar5 
       },
@@ -600,12 +600,12 @@ static uint8 simpleProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pAttr
         *pLen = 1;
         pValue[0] = *pAttr->pValue;
         break;
-
+      /*
       case SIMPLEPROFILE_CHAR5_UUID:
         *pLen = SIMPLEPROFILE_CHAR5_LEN;
         VOID osal_memcpy( pValue, pAttr->pValue, SIMPLEPROFILE_CHAR5_LEN );
         break;
-        
+      */
       default:
         // Should never get here! (characteristics 3 and 4 do not have read permissions)
         *pLen = 0;
@@ -682,6 +682,36 @@ static bStatus_t simpleProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *
         }
              
         break;
+
+
+      case SIMPLEPROFILE_CHAR5_UUID:
+
+        //Validate the value
+        // Make sure it's not a blob oper
+        if ( offset == 0 )
+        {
+          if ( (len != 4) ) //min = 2 for [len][data], max = max payload packet
+          {
+            status = ATT_ERR_INVALID_VALUE_SIZE;
+          }
+        }
+        else
+        {
+          status = ATT_ERR_ATTR_NOT_LONG;
+        }
+        
+        //Write the value
+        if ( status == SUCCESS )
+        {
+          uint8 *pCurValue = (uint8 *)pAttr->pValue;        
+          *pCurValue = pValue[0];
+          osal_memcpy(pCurValue, pValue, len);
+          
+          notifyApp = SIMPLEPROFILE_CHAR5;
+        }
+             
+        break;
+
 
       case GATT_CLIENT_CHAR_CFG_UUID:
         status = GATTServApp_ProcessCCCWriteReq( connHandle, pAttr, pValue, len,

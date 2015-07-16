@@ -59,7 +59,6 @@ extern "C"
 // Time App Task Events
 #define START_DEVICE_EVT                              0x0001
 #define START_DISCOVERY_EVT                           0x0002
-#define CLOCK_UPDATE_EVT                              0x0004
 
 // Time App discovery states
 enum
