@@ -64,7 +64,10 @@
 
 #include "gapbondmgr.h"
 
+#include "timeapp.h"
+
 #include "simpleBLEPeripheral.h"
+
 
 #if defined (SERIAL_INTERFACE)
 #include "serialInterface.h"
@@ -648,6 +651,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
  */
 static void performPeriodicTask( void )
 {
+    timeAppClockDisplay();
     //uint8 valueToCopy = 0x08;
     //uint8 stat;
 
