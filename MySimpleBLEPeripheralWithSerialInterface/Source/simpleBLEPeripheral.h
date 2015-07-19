@@ -55,7 +55,7 @@ extern "C"
 
 
 // Simple BLE Peripheral Task Events
-#define SBP_START_DEVICE_EVT                              0x0001
+#define SBP_START_DEVICE_EVT                         0x0001
 #define SBP_PERIODIC_EVT                                  0x0002
 
 // << Wayne >> << Clock >> ++
@@ -65,9 +65,9 @@ extern "C"
 // << Wayne >> << 128-bit UUID >> ++
 #define dB_UUID(uuid_C,uuid_A,uuid_S)       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, LO_UINT16(uuid_S), HI_UINT16(uuid_S), LO_UINT16(uuid_A), HI_UINT16(uuid_A), LO_UINT16(uuid_C), HI_UINT16(uuid_C), 0xDB, 0xFF, 0x10, 0xF5 
 // << Wayne >> << 128-bit UUID >> --
-// << Wayne >> << 128-bit UUID >> ++
+// << Wayne >> << Device ID >> ++
 #define dB_DevID(id)       {0xFF, 0xDB, HI_UINT16(id), LO_UINT16(id), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-// << Wayne >> << 128-bit UUID >> --
+// << Wayne >> << Device D >> --
 // << Wayne >> << dBCmd >> ++
 #define DBCMD_COMFIRM_TICKET                          "s,et,01,dic,"
 #define DBCMD_COMFIRM_TICKET_LEN                  12

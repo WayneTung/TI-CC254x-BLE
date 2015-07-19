@@ -230,6 +230,9 @@ extern uint8 timeAppConfigGattMsg( uint8 state, gattMsgEvent_t *pMsg );
  */
 extern void timeAppIndGattMsg( gattMsgEvent_t *pMsg );
 
+
+extern uint8 storeCloseTime(uint8 hour, uint8 minutes);
+
 /*********************************************************************
 *********************************************************************/
 

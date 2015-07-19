@@ -453,18 +453,25 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
 
         // Perform periodic application task
         performPeriodicTask();
-
         return (events ^ SBP_PERIODIC_EVT);
     }
 
     // << Wayne >> << Clock >> ++
     if ( events & CLOCK_UPDATE_EVT )
     {
-        timeAppClockDisplay();
-
-        // Restart clock tick timer
+         if ( DEFAULT_CLOCK_UPDATE_PERIOD )
+        {
         osal_start_timerEx( simpleBLEPeripheral_TaskID, CLOCK_UPDATE_EVT, DEFAULT_CLOCK_UPDATE_PERIOD );
-
+        }
+        
+        timeAppClockDisplay();
+        if(storeCloseTime(0,10))
+        {
+            HalLcdWriteString( "Clean",  HAL_LCD_LINE_6 );
+            dbExchangeCounter = 0;
+        }
+        // Restart clock tick timer
+        
         return (events ^ CLOCK_UPDATE_EVT);
     }
     // << Wayne >> << Clock >> --
@@ -553,6 +560,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
         #if defined (SERIAL_INTERFACE)
                 sendSerialString( "State > Advertising...\r\n", 24 );
+                sendSerialString("s,dB,disconnect,e\r\n",19);
         #endif
 
     }
@@ -724,10 +732,9 @@ static void simpleProfileChangeCB( uint8 paramID )
         }
         break;
       case SIMPLEPROFILE_CHAR5:
-      {
         SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR5, &data );
         timeAppClockSet(&data[0]);
-      }
+        break;
     default:
         // should not reach here!
         break;
@@ -822,6 +829,7 @@ uint8 dBCommand_Service(uint8 *pCmd)
         // << Wayne >> << Exchanging Take >> ++
         dbExchangeCounter++;
         // << Wayne >> << Exchanging Take >> --
+        sendSerialString(pCmd,19);
     }
     else if(osal_memcmp( pCmd, DBCMD_READ_EXCHANGE_NUMBER, DBCMD_READ_EXCHANGE_NUMBER_LEN))
     {

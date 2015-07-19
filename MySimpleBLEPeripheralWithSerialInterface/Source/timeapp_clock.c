@@ -147,7 +147,8 @@ void timeAppClockDisplay( void )
   p = num2Str( p, time.day + 1 );
   *p++ = ' ';
   
-  _ltoa( time.year, (uint8 *) p, 10 );
+
+ // _ltoa( time.year, (uint8 *) p, 10 );
   
   LCD_WRITE_STRING( displayBuf, HAL_LCD_LINE_4 );  
 }
@@ -207,6 +208,19 @@ void timeAppClockSet( uint8 *pData )
   osal_setClock( newValue32 );
   
   timeAppClockDisplay();
+}
+
+uint8 storeCloseTime(uint8 hour, uint8 minutes)
+{
+  UTCTimeStruct time;
+  // Get time structure from OSAL
+  osal_ConvertUTCTime( &time, osal_getClock() );
+  if((hour == time.hour)&&(minutes == time.minutes))
+  {
+    return 1;
+  }
+  else
+    return 0;  
 }
 
 /*********************************************************************
