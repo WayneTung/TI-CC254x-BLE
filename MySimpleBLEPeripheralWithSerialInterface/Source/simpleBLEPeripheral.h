@@ -53,7 +53,6 @@ extern "C"
  * CONSTANTS
  */
 
-
 // Simple BLE Peripheral Task Events
 #define SBP_START_DEVICE_EVT                         0x0001
 #define SBP_PERIODIC_EVT                                  0x0002
@@ -61,7 +60,13 @@ extern "C"
 // << Wayne >> << Clock >> ++
 #define CLOCK_UPDATE_EVT                                0x0010
 // << Wayne >> << Clock >> --
-// 
+
+// << Wayne >> << 128-bit UUID  >> ++
+#define DB_UUID_C    0x0001
+#define DB_UUID_A    0x0001    
+#define DB_UUID_S    0xFFFF                   
+// << Wayne >> << 128-bit UUID  >> --
+
 // << Wayne >> << 128-bit UUID >> ++
 #define dB_UUID(uuid_C,uuid_A,uuid_S)       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, LO_UINT16(uuid_S), HI_UINT16(uuid_S), LO_UINT16(uuid_A), HI_UINT16(uuid_A), LO_UINT16(uuid_C), HI_UINT16(uuid_C), 0xDB, 0xFF, 0x10, 0xF5 
 // << Wayne >> << 128-bit UUID >> --
@@ -78,7 +83,18 @@ extern "C"
 /*********************************************************************
  * MACROS
  */
-
+// UART macros
+#if defined (SERIAL_INTERFACE)
+#define UART_SEND_STRING(str, len)                      sendSerialString( (str), (len))
+  #if UART_DEBUG_MSG == TRUE
+  #define UART_SEND_DEBUG_MSG(str, len)            sendSerialString( "[DMSG] ", 7 ); sendSerialString( (str), (len))
+  #else
+  #define UART_SEND_DEBUG_MSG(str, len)             
+  #endif
+#else
+#define UART_SEND_STRING(str, len)                      
+#define UART_SEND_DEBUG_MSG(str, len) 
+#endif
 /*********************************************************************
  * FUNCTIONS
  */

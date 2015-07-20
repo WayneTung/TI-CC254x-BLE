@@ -193,7 +193,7 @@ static uint8 advertData[] =
   // << Wayne >> << Advert UUID >> ++
   0x11,   // length of this data
   GAP_ADTYPE_128BIT_MORE,      // some of the UUID's, but not all
-  dB_UUID(0x0001,0x0001,0x0001),   // Company ID, Area ID, Store&Shop ID
+  dB_UUID(DB_UUID_C,DB_UUID_A,DB_UUID_S),   // Company ID, Area ID, Store&Shop ID
   /// << Wayne >> << Advert UUID >> --
 };
 
@@ -212,12 +212,10 @@ static void simpleProfileChangeCB( uint8 paramID );
 static bool repeatCmdSendData(uint8* data, uint8 len);
 // << Wayne >> << RepeatCmd  >>  --
 // << Wayne >> << dBCmd Service  >> ++
-uint8 dBCommand_Service(uint8 *pCmd);
+void dBCommand_Service(uint8 *pCmd);
 // << Wayne >> << dBCmd Service  >> --
 // << Wayne >> << Digits To Ascii  >> ++
-uint8 Single_digits_to_ascii(uint16 vaule);
-uint8 Tens_digits_to_ascii(uint16 vaule);
-uint8 Hundreds_digit_to_ascii(uint16 vaule);
+static uint8 *num2Str_Max4L( uint8 *pStr, uint16 num, uint8 len);
 // << Wayne >> << Digits To Ascii  >> --
 
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -354,7 +352,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
 
 #if defined (SERIAL_INTERFACE)
-    sendSerialString( "BLE Peripheral\r\n", 16 );
+    UART_SEND_STRING( "BLE Peripheral\r\n", 16 );
 #endif
 
 
@@ -463,7 +461,6 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
         {
         osal_start_timerEx( simpleBLEPeripheral_TaskID, CLOCK_UPDATE_EVT, DEFAULT_CLOCK_UPDATE_PERIOD );
         }
-        
         timeAppClockDisplay();
         if(storeCloseTime(0,10))
         {
@@ -545,9 +542,8 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
           HalLcdWriteString( bdAddr2Str( ownAddress ),  HAL_LCD_LINE_2 );
           HalLcdWriteString( "Initialized",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
-        #if defined (SERIAL_INTERFACE)
-            sendSerialString( "State > DevInit\r\n", 17 );
-        #endif
+          
+        UART_SEND_DEBUG_MSG( "State > DevInit\r\n", 17 );
 
     }
     break;
@@ -558,10 +554,8 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
           HalLcdWriteString( "Advertising",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
-        #if defined (SERIAL_INTERFACE)
-                sendSerialString( "State > Advertising...\r\n", 24 );
-                sendSerialString("s,dB,disconnect,e\r\n",19);
-        #endif
+        UART_SEND_DEBUG_MSG( "State > Advertising...\r\n", 24 );
+        UART_SEND_STRING("s,dB,disconnect,e\r\n",19);
 
     }
     break;
@@ -572,9 +566,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
           HalLcdWriteString( "Connected",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
-        #if defined (SERIAL_INTERFACE)
-                sendSerialString( "State > Connected\r\n", 19 );
-        #endif
+        UART_SEND_DEBUG_MSG( "State > Connected\r\n", 19 );
 
 
 #ifdef PLUS_BROADCASTER
@@ -596,9 +588,8 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Connected Advertising",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
-        #if defined (SERIAL_INTERFACE)
-                sendSerialString( "State > Connected Advertising\r\n", 31 );
-        #endif
+
+        UART_SEND_DEBUG_MSG( "State > Connected Advertising\r\n", 31 );
 
     }
     break;
@@ -608,9 +599,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
           HalLcdWriteString( "Disconnected",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
-        #if defined (SERIAL_INTERFACE)
-                sendSerialString( "State > Waiting\r\n", 17 );
-        #endif
+        UART_SEND_DEBUG_MSG( "State > Waiting\r\n", 17 );
 
     }
     break;
@@ -621,9 +610,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
           HalLcdWriteString( "Timed Out",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
-        #if defined (SERIAL_INTERFACE)
-                sendSerialString( "State > Time Out\r\n", 18 );
-        #endif
+        UART_SEND_DEBUG_MSG( "State > Time Out\r\n", 18 );
 
 
 #ifdef PLUS_BROADCASTER
@@ -639,9 +626,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
           HalLcdWriteString( "Error",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
-        #if defined (SERIAL_INTERFACE)
-                sendSerialString( "State > Error\r\n", 15 );
-        #endif
+        UART_SEND_DEBUG_MSG( "State > Error\r\n", 15 );
 
     }
     break;
@@ -721,7 +706,7 @@ static void simpleProfileChangeCB( uint8 paramID )
     case SIMPLEPROFILE_CHAR3:
         SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &data );
         len = data[0];
-        sendSerialString(&data[1], len);
+        UART_SEND_DEBUG_MSG(&data[1], len);
         // << Wayne >> << RepeatCmd >> ++
         if(repeatCmdSendData(&data[1], len))
         // << Wayne >> << RepeatCmd >> --
@@ -821,7 +806,7 @@ char *bdAddr2Str( uint8 *pAddr )
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
 // << Wayne >> << dBCmd Service  >> ++
-uint8 dBCommand_Service(uint8 *pCmd)
+void dBCommand_Service(uint8 *pCmd)
 {
     if(osal_memcmp( pCmd, DBCMD_COMFIRM_TICKET, DBCMD_COMFIRM_TICKET_LEN))
     {
@@ -829,17 +814,15 @@ uint8 dBCommand_Service(uint8 *pCmd)
         // << Wayne >> << Exchanging Take >> ++
         dbExchangeCounter++;
         // << Wayne >> << Exchanging Take >> --
-        sendSerialString(pCmd,19);
+        UART_SEND_STRING(pCmd,19);
     }
     else if(osal_memcmp( pCmd, DBCMD_READ_EXCHANGE_NUMBER, DBCMD_READ_EXCHANGE_NUMBER_LEN))
     {
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "ReadCounter",  HAL_LCD_LINE_6 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
-        pCmd[12] = 0x30;
-        pCmd[13] = Hundreds_digit_to_ascii(dbExchangeCounter);
-        pCmd[14] = Tens_digits_to_ascii(dbExchangeCounter);
-        pCmd[15] = Single_digits_to_ascii(dbExchangeCounter);
+        num2Str_Max4L( &pCmd[12], dbExchangeCounter, 4);
+        UART_SEND_DEBUG_MSG( pCmd, 18 );
         repeatCmdSendData(pCmd,18);
     }
 }
@@ -862,29 +845,30 @@ static bool repeatCmdSendData(uint8* data, uint8 len)
 }
 // << Wayne >> << RepeatCmd  >> -- 
 // << Wayne >> << Digits To Ascii  >> ++
-uint8 Single_digits_to_ascii(uint16 vaule)
+static uint8 *num2Str_Max4L( uint8 *pStr, uint16 num, uint8 len)
 {
-     vaule = (vaule % 10) + '0';
-    return vaule;
-}
-
-uint8 Tens_digits_to_ascii(uint16 vaule)
-{
-    if(vaule >= 100)
-    {  
-        vaule = vaule %100;
-        vaule = (vaule / 10) + '0';
+    uint16 maxNum = 1;
+    for( uint8 i = 1; i <= len; i++ )
+    {
+      maxNum *= 10;
     }
-    else{
-        vaule = (vaule / 10) + '0';
-    }
-    return vaule;
-}
 
-uint8 Hundreds_digit_to_ascii(uint16 vaule)
-{
-    vaule = (vaule / 100) + '0';
-    return vaule;
+    if(num > maxNum)
+    {
+      num %= maxNum;
+    }
+
+    for( uint8 i = 2; i < len; i++)
+    {
+      maxNum /=10;
+      *pStr++ = (num / maxNum) + '0';
+      num %= maxNum;      
+    }
+
+    *pStr++ = (num / 10) + '0';
+    *pStr++ = (num % 10) + '0';
+
+    return pStr;
 }
 // << Wayne >> << Digits To Ascii  >> --
 /*********************************************************************

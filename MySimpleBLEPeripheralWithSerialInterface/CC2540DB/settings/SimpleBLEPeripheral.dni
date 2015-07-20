@@ -10,7 +10,7 @@ LimitSize=0
 ByteLimit=50
 [DebugChecksum]
 <<<<<<< HEAD
-Checksum=-109438955
+Checksum=1091170762
 =======
 Checksum=697904275
 >>>>>>> dBConfirmTicketCmmand
@@ -21,7 +21,7 @@ MixedMode=1
 [Breakpoints]
 Count=0
 [ChipconEmu]
-Stop timers on halt=1
+Stop timers on halt=0
 Leave target running=1
 [Log file]
 LoggingEnabled=_ 0
