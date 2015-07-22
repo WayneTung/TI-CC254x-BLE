@@ -72,7 +72,6 @@
 #if defined (SERIAL_INTERFACE)
 #include "serialInterface.h"
 #endif
-
 /*********************************************************************
  * MACROS
  */
@@ -388,6 +387,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   // Start clock update timer
   osal_start_timerEx( simpleBLEPeripheral_TaskID, CLOCK_UPDATE_EVT, DEFAULT_CLOCK_UPDATE_PERIOD );
   // << Wayne >> << Clock >> --
+  // 
 }
 
 /*********************************************************************
@@ -462,9 +462,9 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
         osal_start_timerEx( simpleBLEPeripheral_TaskID, CLOCK_UPDATE_EVT, DEFAULT_CLOCK_UPDATE_PERIOD );
         }
         timeAppClockDisplay();
-        if(storeCloseTime(0,10))
-        {
-            HalLcdWriteString( "Clean",  HAL_LCD_LINE_6 );
+        if(storeCloseTime(23,59))
+        {\
+          UART_SEND_DEBUG_MSG( "Action > CleanCounter\r\n", 23 );
             dbExchangeCounter = 0;
         }
         // Restart clock tick timer
@@ -767,7 +767,16 @@ uint8 Application_StopAdvertise()
     }
     return FAILURE;
 }
-
+uint8 Application_TerminateConnection()
+{
+    if( gapProfileState == GAPROLE_CONNECTED )
+    {
+      // Exit the connection
+      GAPRole_TerminateConnection();
+      return SUCCESS;
+    }
+    return FAILURE;
+}
 
 /*********************************************************************
 *********************************************************************/

@@ -201,6 +201,7 @@ void cSerialPacketParser( uint8 port, uint8 events )
                 case APP_CMD_ADVERTISE:
                 case APP_CMD_STOP_ADVERTISE:
                 case APP_CMD_DATA:
+                case APP_CMD_TERMINATE_CONNECTION:
                     rxSerialPkt.header.opCode = cmd_opcode;
                     pktState = NPI_SERIAL_STATE_LEN;
                     break;
@@ -292,10 +293,20 @@ void parseCmd(void)
         break;
     }
     case APP_CMD_DATA:
+    {
         //you can handle rxSerialPkt.data & rxSerialPkt.length here
 
         sendSerialResp(opCode, SUCCESS);
         break;
+    }
+    case APP_CMD_TERMINATE_CONNECTION:
+    {
+        uint8 status = Application_TerminateConnection();
+        
+        sendSerialResp(opCode, status);
+
+        break;       
+    }
     }
 }
 

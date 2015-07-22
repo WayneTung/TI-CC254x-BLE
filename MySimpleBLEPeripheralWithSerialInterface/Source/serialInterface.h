@@ -20,6 +20,7 @@ jackalchen737@gmail.com
 #define APP_CMD_ADVERTISE       0x01
 #define APP_CMD_STOP_ADVERTISE  0x02
 #define APP_CMD_DATA            0x03
+#define APP_CMD_TERMINATE_CONNECTION  0x04
 
 //tx opcode
 #define	APP_EVT_CMD_RESPONSE	0x81

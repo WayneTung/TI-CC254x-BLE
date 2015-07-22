@@ -111,6 +111,7 @@ extern uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events );
 
 uint8 Application_StartAdvertise(uint16 duration, uint16 interval);
 uint8 Application_StopAdvertise();
+uint8 Application_TerminateConnection();
 
 /*********************************************************************
 *********************************************************************/
