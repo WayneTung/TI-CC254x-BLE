@@ -120,7 +120,11 @@
  // Clock display update period in ms; set to 60 sec or less since time is displayed in minutes
 #define DEFAULT_CLOCK_UPDATE_PERIOD           10000
 // << Wayne >> << Clock >> --
-
+// 
+// << Wayne >> <<  Check Connect  Overtime> > ++
+ // How often to Check connect  overtime event
+#define SBP_CHECK_CONNECT_OVERTIME_DELAY   60000
+ // << Wayne >> <<  Check Connect  Overtime >> --
 /*********************************************************************
  * TYPEDEFS
  */
@@ -385,7 +389,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
 
   // << Wayne >> << Clock >> ++
   // Start clock update timer
-  osal_start_timerEx( simpleBLEPeripheral_TaskID, CLOCK_UPDATE_EVT, DEFAULT_CLOCK_UPDATE_PERIOD );
+  osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_CLOCK_UPDATE_EVT, DEFAULT_CLOCK_UPDATE_PERIOD );
   // << Wayne >> << Clock >> --
   // 
 }
@@ -455,23 +459,31 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     }
 
     // << Wayne >> << Clock >> ++
-    if ( events & CLOCK_UPDATE_EVT )
+    if ( events & SBP_CLOCK_UPDATE_EVT )
     {
          if ( DEFAULT_CLOCK_UPDATE_PERIOD )
         {
-        osal_start_timerEx( simpleBLEPeripheral_TaskID, CLOCK_UPDATE_EVT, DEFAULT_CLOCK_UPDATE_PERIOD );
+          osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_CLOCK_UPDATE_EVT, DEFAULT_CLOCK_UPDATE_PERIOD );
         }
         timeAppClockDisplay();
         if(storeCloseTime(23,59))
-        {\
+        {
           UART_SEND_DEBUG_MSG( "Action > CleanCounter\r\n", 23 );
             dbExchangeCounter = 0;
         }
         // Restart clock tick timer
         
-        return (events ^ CLOCK_UPDATE_EVT);
+        return (events ^ SBP_CLOCK_UPDATE_EVT);
     }
     // << Wayne >> << Clock >> --
+    // << Wayne >> <<  Check Connect  Overtime> > ++
+    if ( events & SBP_CONNECT_OVERTIME_EVT )
+    {      
+        Application_TerminateConnection();
+        UART_SEND_DEBUG_MSG( "Action > Terminate\r\n", 20 );
+        return (events ^ SBP_CONNECT_OVERTIME_EVT);
+    }
+    // << Wayne >> <<  Check Connect  Overtime> > --
     // Discard unknown events
     return 0;
 }
@@ -556,7 +568,9 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
         UART_SEND_DEBUG_MSG( "State > Advertising...\r\n", 24 );
         UART_SEND_STRING("s,dB,disconnect,e\r\n",19);
-
+        // << Wayne >> <<  Check Connect  Overtime> > ++
+        osal_stop_timerEx( simpleBLEPeripheral_TaskID, SBP_CONNECT_OVERTIME_EVT );
+        // << Wayne >> <<  Check Connect  Overtime> > --
     }
     break;
 
@@ -567,7 +581,9 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
         UART_SEND_DEBUG_MSG( "State > Connected\r\n", 19 );
-
+        // << Wayne >> <<  Check Connect  Overtime> > ++
+        osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_CONNECT_OVERTIME_EVT, SBP_CHECK_CONNECT_OVERTIME_DELAY );
+        // << Wayne >> <<  Check Connect  Overtime> > --
 
 #ifdef PLUS_BROADCASTER
         // Only turn advertising on for this state when we first connect

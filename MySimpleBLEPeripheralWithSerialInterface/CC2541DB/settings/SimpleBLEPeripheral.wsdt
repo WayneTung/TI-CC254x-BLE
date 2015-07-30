@@ -12,7 +12,7 @@
           
           
           
-        <Column0>214</Column0><Column1>27</Column1><Column2>27</Column2><Column3>27</Column3></ColumnWidths>
+        <Column0>370</Column0><Column1>27</Column1><Column2>27</Column2><Column3>27</Column3></ColumnWidths>
       </Workspace>
       <Build>
         
@@ -59,7 +59,7 @@
       
       
       
-    <Top><Row0><Sizes><Toolbar-02fb1428><key>iaridepm.enu1</key></Toolbar-02fb1428></Sizes></Row0><Row1><Sizes/></Row1><Row2><Sizes/></Row2></Top><Left><Row0><Sizes><Wnd2><Rect><Top>-2</Top><Left>-2</Left><Bottom>291</Bottom><Right>305</Right><x>-2</x><y>-2</y><xscreen>200</xscreen><yscreen>225</yscreen><sizeHorzCX>235849</sizeHorzCX><sizeHorzCY>456389</sizeHorzCY><sizeVertCX>362028</sizeVertCX><sizeVertCY>620690</sizeVertCY></Rect></Wnd2></Sizes></Row0></Left><Right><Row0><Sizes/></Row0></Right><Bottom><Row0><Sizes><Wnd3><Rect><Top>-2</Top><Left>-2</Left><Bottom>157</Bottom><Right>850</Right><x>-2</x><y>-2</y><xscreen>851</xscreen><yscreen>159</yscreen><sizeHorzCX>1003538</sizeHorzCX><sizeHorzCY>322515</sizeHorzCY><sizeVertCX>235849</sizeVertCX><sizeVertCY>456389</sizeVertCY></Rect></Wnd3></Sizes></Row0></Bottom><Float><Sizes/></Float></Positions>
+    <Top><Row0><Sizes><Toolbar-03511428><key>iaridepm.enu1</key></Toolbar-03511428></Sizes></Row0><Row1><Sizes><Toolbar-099adb50><key>debuggergui.enu1</key></Toolbar-099adb50></Sizes></Row1></Top><Left><Row0><Sizes><Wnd2><Rect><Top>-2</Top><Left>-2</Left><Bottom>445</Bottom><Right>461</Right><x>-2</x><y>-2</y><xscreen>302</xscreen><yscreen>329</yscreen><sizeHorzCX>235938</sizeHorzCX><sizeHorzCY>456311</sizeHorzCY><sizeVertCX>361719</sizeVertCX><sizeVertCY>619972</sizeVertCY></Rect></Wnd2></Sizes></Row0></Left><Right><Row0><Sizes/></Row0></Right><Bottom><Row0><Sizes><Wnd3><Rect><Top>-2</Top><Left>-2</Left><Bottom>231</Bottom><Right>1282</Right><x>-2</x><y>-2</y><xscreen>1284</xscreen><yscreen>233</yscreen><sizeHorzCX>1003125</sizeHorzCX><sizeHorzCY>323162</sizeHorzCY><sizeVertCX>235938</sizeVertCX><sizeVertCY>456311</sizeVertCY></Rect></Wnd3></Sizes></Row0></Bottom><Float><Sizes/></Float></Positions>
   </Desktop>
 </Workspace>
 

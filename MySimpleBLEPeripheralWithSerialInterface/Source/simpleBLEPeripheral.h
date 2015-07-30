@@ -58,13 +58,16 @@ extern "C"
 #define SBP_PERIODIC_EVT                                  0x0002
 
 // << Wayne >> << Clock >> ++
-#define CLOCK_UPDATE_EVT                                0x0010
+#define SBP_CLOCK_UPDATE_EVT                        0x0010
 // << Wayne >> << Clock >> --
+// << Wayne >> <<  Check Connect  Overtime> > ++
+#define SBP_CONNECT_OVERTIME_EVT               0x0020
+// << Wayne >> <<  Check Connect  Overtime> > --
 
 // << Wayne >> << 128-bit UUID  >> ++
 #define DB_UUID_C    0x0001
 #define DB_UUID_A    0x0001    
-#define DB_UUID_S    0xFFFF                   
+#define DB_UUID_S    0x0001                   
 // << Wayne >> << 128-bit UUID  >> --
 
 // << Wayne >> << 128-bit UUID >> ++
