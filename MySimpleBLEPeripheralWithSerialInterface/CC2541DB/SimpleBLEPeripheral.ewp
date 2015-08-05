@@ -1372,7 +1372,7 @@
           <state>HAL_UART_ISR=0</state>
           <state>HAL_LCD=TRUE</state>
           <state>HAL_LED=FALSE</state>
-          <state>UART_DEBUG_MSG=FALSE</state>
+          <state>UART_DEBUG_MSG=TRUE</state>
         </option>
         <option>
           <name>CCPreprocFile</name>

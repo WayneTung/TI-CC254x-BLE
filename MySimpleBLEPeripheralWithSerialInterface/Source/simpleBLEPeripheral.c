@@ -22,7 +22,7 @@
   its documentation for any purpose.
 
   YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-  PROVIDED ìAS ISî WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  PROVIDED ‚ÄúAS IS‚Äù WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
   INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
   NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
   TEXAS INSTRUMENTS OR ITS LICENSORS BE LIABLE OR OBLIGATED UNDER CONTRACT,
@@ -81,7 +81,7 @@
  */
 
 // How often to perform periodic event
-#define SBP_PERIODIC_EVT_PERIOD                   5000
+#define SBP_PERIODIC_EVT_PERIOD                   1000
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
 #define DEFAULT_ADVERTISING_INTERVAL          160
@@ -144,6 +144,10 @@
 /*********************************************************************
  * LOCAL VARIABLES
  */
+//static uint8 primeNum[PRIME_NUMBER_SIZE] = {PRIME_NUMBER};
+static uint8 primeBaseNum[PRIME_BASE_NUMBER_SIZE] = {PRIME_BASE_NUMBER};
+static uint8 primeModulusNum[PRIME_MODULUS_NUMBER_SIZE] = {PRIME_MODULUS_NUMBER};
+
 static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
 
 static gaprole_States_t gapProfileState = GAPROLE_INIT;
@@ -220,7 +224,12 @@ void dBCommand_Service(uint8 *pCmd);
 // << Wayne >> << Digits To Ascii  >> ++
 static uint8 *num2Str_Max4L( uint8 *pStr, uint16 num, uint8 len);
 // << Wayne >> << Digits To Ascii  >> --
-
+// << Wayne >> <<  Random Number Generator 20 bytes  >> ++
+uint8 *randomGen_Max20bytes(uint8 len);
+// << Wayne >> <<  Random Number Generator 20 bytes  >> --
+// << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> ++
+uint8 exchange_DHM( uint8 *pNum);
+// << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> --
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)
 static char *bdAddr2Str ( uint8 *pAddr );
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -342,13 +351,13 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     // Setup the SimpleProfile Characteristic Values
     {
         uint8 charValue1[SIMPLEPROFILE_CHAR1_LEN]  =  dB_DevID(0x0001) ;
-        uint8 charValue2 = 2;
-        uint8 charValue3 = 3;
+        uint8 charValue2[SIMPLEPROFILE_CHAR2_LEN] ={0};
+        //uint8 charValue3 = 3;
         uint8 charValue4 = 4;
         uint8 charValue5[SIMPLEPROFILE_CHAR5_LEN] = {0};
         SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR1, SIMPLEPROFILE_CHAR1_LEN, charValue1 );
-        SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, sizeof ( uint8 ), &charValue2 );
-        SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR3, sizeof ( uint8 ), &charValue3 );
+        SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, SIMPLEPROFILE_CHAR2_LEN, charValue2 );
+        //SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR3, sizeof ( uint8 ), &charValue3 );
         SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR4, sizeof ( uint8 ), &charValue4 );
         SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR5, SIMPLEPROFILE_CHAR5_LEN, charValue5 );
     }
@@ -565,12 +574,17 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "Advertising",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
-
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( "          ",  HAL_LCD_LINE_6 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
         UART_SEND_DEBUG_MSG( "State > Advertising...\r\n", 24 );
         UART_SEND_STRING("s,dB,disconnect,e\r\n",19);
         // << Wayne >> <<  Check Connect  Overtime> > ++
         osal_stop_timerEx( simpleBLEPeripheral_TaskID, SBP_CONNECT_OVERTIME_EVT );
         // << Wayne >> <<  Check Connect  Overtime> > --
+        // << Wayne >> <<  Random Number Generator 20 bytes  >> ++
+        SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, SIMPLEPROFILE_CHAR2_LEN, randomGen_Max20bytes(SIMPLEPROFILE_CHAR2_LEN) );
+        // << Wayne >> <<  Random Number Generator 20 bytes  >> --
     }
     break;
 
@@ -680,6 +694,13 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
  */
 static void performPeriodicTask( void )
 {
+    
+    uint8 data[20];
+    SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, SIMPLEPROFILE_CHAR2_LEN, randomGen_Max20bytes(SIMPLEPROFILE_CHAR2_LEN) );
+    SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, &data );
+    data[1] = exchange_DHM(data);
+    SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, SIMPLEPROFILE_CHAR2_LEN, data);
+  
     //uint8 valueToCopy = 0x08;
     //uint8 stat;
 
@@ -840,6 +861,9 @@ void dBCommand_Service(uint8 *pCmd)
         dbExchangeCounter++;
         // << Wayne >> << Exchanging Take >> --
         UART_SEND_STRING(pCmd,19);
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( "Confirm",  HAL_LCD_LINE_6 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
     }
     else if(osal_memcmp( pCmd, DBCMD_READ_EXCHANGE_NUMBER, DBCMD_READ_EXCHANGE_NUMBER_LEN))
     {
@@ -896,5 +920,49 @@ static uint8 *num2Str_Max4L( uint8 *pStr, uint16 num, uint8 len)
     return pStr;
 }
 // << Wayne >> << Digits To Ascii  >> --
+// << Wayne >> <<  Random Number Generator 20 bytes  >> ++
+uint8 *randomGen_Max20bytes(uint8 len)
+{
+    uint16 randomNum;
+    static uint8 num[20];
+    uint8  *pNum = num;
+     for( uint8 i = 0; i < len; i++ )
+     {
+          do{
+            randomNum = osal_rand();
+          }while(!(randomNum & 0x00FF));
+
+        *pNum++ = randomNum & 0xFF;
+        //randomNum = randomNum>>4;
+     }
+
+     return num;
+}
+// << Wayne >> <<  Random Number Generator 20 bytes  >> --
+// << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> ++
+uint8 exchange_DHM( uint8 *pNum)
+{
+    //uint8 data[10];
+    uint32 base = primeBaseNum[(*(pNum + HDM_BASE_INDEX))%PRIME_BASE_NUMBER_SIZE];
+    //num2Str_Max4L( data, (uint16)base, 4);
+    //UART_SEND_DEBUG_MSG( data, 4 );
+    uint32 modulus = primeModulusNum[(*(pNum + HDM_MODULUS_INDEX))%PRIME_MODULUS_NUMBER_SIZE];
+   //num2Str_Max4L( data, (uint16)modulus, 4);
+    //UART_SEND_DEBUG_MSG( data, 4 );
+    uint32 quotient;
+    uint32  computesBase = 1;
+     for( uint8 i = 0; i < HDM_PRIVATE_KEY; i++ )
+     {
+       computesBase *= base;
+     }
+    
+     quotient = ( computesBase % modulus );
+
+    //num2Str_Max4L( data, (uint16)quotient, 4);
+    //UART_SEND_DEBUG_MSG( data, 4 );
+    //UART_SEND_DEBUG_MSG( "\r\n", 2 );
+     return quotient;
+}
+// << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> --
 /*********************************************************************
 *********************************************************************/
