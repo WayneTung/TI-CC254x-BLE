@@ -81,7 +81,7 @@
  */
 
 // How often to perform periodic event
-#define SBP_PERIODIC_EVT_PERIOD                   1000
+#define SBP_PERIODIC_EVT_PERIOD                   10000
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
 #define DEFAULT_ADVERTISING_INTERVAL          160
@@ -144,9 +144,12 @@
 /*********************************************************************
  * LOCAL VARIABLES
  */
-//static uint8 primeNum[PRIME_NUMBER_SIZE] = {PRIME_NUMBER};
 static uint8 primeBaseNum[PRIME_BASE_NUMBER_SIZE] = {PRIME_BASE_NUMBER};
 static uint8 primeModulusNum[PRIME_MODULUS_NUMBER_SIZE] = {PRIME_MODULUS_NUMBER};
+// << Wayne >> << AES En-Decrypt  >> ++
+static uint8 fixAESKey[] = {AES_FIX_KEY};
+static uint8 dynAESKey[] = {AES_DYN_KEY};
+// << Wayne >> << AES En-Decrypt  >> --
 
 static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
 
@@ -222,13 +225,15 @@ static bool repeatCmdSendData(uint8* data, uint8 len);
 void dBCommand_Service(uint8 *pCmd);
 // << Wayne >> << dBCmd Service  >> --
 // << Wayne >> << Digits To Ascii  >> ++
-static uint8 *num2Str_Max4L( uint8 *pStr, uint16 num, uint8 len);
+void  num2Str_Max4L( uint8 *pStr, uint16 num, uint8 len);
+char *pNum2Str_Max4L( uint16 num, uint8 len);
 // << Wayne >> << Digits To Ascii  >> --
 // << Wayne >> <<  Random Number Generator 20 bytes  >> ++
 uint8 *randomGen_Max20bytes(uint8 len);
 // << Wayne >> <<  Random Number Generator 20 bytes  >> --
 // << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> ++
-uint8 exchange_DHM( uint8 *pNum);
+void dHM_Service( uint8 *pNum);
+uint8 exchangeKey_DHM( uint8 *encryptedData);
 // << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> --
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)
 static char *bdAddr2Str ( uint8 *pAddr );
@@ -298,12 +303,52 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
         uint16 desired_slave_latency = DEFAULT_DESIRED_SLAVE_LATENCY;
         uint16 desired_conn_timeout = DEFAULT_DESIRED_CONN_TIMEOUT;
 
+
+      uint8 plainText[16] = {dB_UUID(DB_UUID_C,DB_UUID_A,DB_UUID_S)};
+      uint8 encryptedData[16];    
+      LL_Encrypt( fixAESKey, plainText, encryptedData );
+   
+     // GAP - Advertisement data (max size = 31 bytes, though this is
+     // best kept short to conserve power while advertisting)
+      uint8 advertData2[] = 
+      { 
+          // Flags; this sets the device to use limited discoverable
+          // mode (advertises for 30 seconds at a time) instead of general
+          // discoverable mode (advertises indefinitely)
+          0x02,   // length of this data
+          GAP_ADTYPE_FLAGS,
+          DEFAULT_DISCOVERABLE_MODE | GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
+
+          // service UUID, to notify central devices what services are included
+          // in this peripheral
+        // << Wayne >> << Advert UUID >> ++
+        0x11,   // length of this data
+        GAP_ADTYPE_128BIT_MORE,      // some of the UUID's, but not all
+        /// << Wayne >> << Advert UUID >> --
+        encryptedData[0],
+        encryptedData[1],
+        encryptedData[2],
+        encryptedData[3],
+        encryptedData[4],
+        encryptedData[5],
+        encryptedData[6],        
+        encryptedData[7],
+        encryptedData[8],
+        encryptedData[9],       
+        encryptedData[10],        
+        encryptedData[11],
+        encryptedData[12],
+        encryptedData[13],        
+        encryptedData[14],
+        encryptedData[15]          
+      };
+
         // Set the GAP Role Parameters
         GAPRole_SetParameter( GAPROLE_ADVERT_ENABLED, sizeof( uint8 ), &initial_advertising_enable );
         GAPRole_SetParameter( GAPROLE_ADVERT_OFF_TIME, sizeof( uint16 ), &gapRole_AdvertOffTime );
 
         GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, sizeof ( scanRspData ), scanRspData );
-        GAPRole_SetParameter( GAPROLE_ADVERT_DATA, sizeof( advertData ), advertData );
+        GAPRole_SetParameter( GAPROLE_ADVERT_DATA, sizeof( advertData2 ), advertData2 );
 
         GAPRole_SetParameter( GAPROLE_PARAM_UPDATE_ENABLE, sizeof( uint8 ), &enable_update_request );
         GAPRole_SetParameter( GAPROLE_MIN_CONN_INTERVAL, sizeof( uint16 ), &desired_min_interval );
@@ -693,14 +738,19 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
  * @return  none
  */
 static void performPeriodicTask( void )
-{
-    
+{  
+  /*
+    uint8 plainText[16] = {0};
+    uint8 encryptedData[16];
     uint8 data[20];
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, SIMPLEPROFILE_CHAR2_LEN, randomGen_Max20bytes(SIMPLEPROFILE_CHAR2_LEN) );
     SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, &data );
-    data[1] = exchange_DHM(data);
-    SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, SIMPLEPROFILE_CHAR2_LEN, data);
-  
+    osal_memcpy( plainText, data, 16 );
+    LL_Encrypt( fixAESKey, plainText, encryptedData );
+    exchangeKey_DHM(encryptedData);
+    */
+    //SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, SIMPLEPROFILE_CHAR2_LEN, data);
+    
     //uint8 valueToCopy = 0x08;
     //uint8 stat;
 
@@ -739,7 +789,11 @@ static void simpleProfileChangeCB( uint8 paramID )
         //SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR1, &newValue );
 
         break;
-
+    case SIMPLEPROFILE_CHAR2:
+        SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, &data );
+        dHM_Service(data);
+        repeatCmdSendData(data, 20);
+        break;
     case SIMPLEPROFILE_CHAR3:
         SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &data );
         len = data[0];
@@ -894,7 +948,7 @@ static bool repeatCmdSendData(uint8* data, uint8 len)
 }
 // << Wayne >> << RepeatCmd  >> -- 
 // << Wayne >> << Digits To Ascii  >> ++
-static uint8 *num2Str_Max4L( uint8 *pStr, uint16 num, uint8 len)
+void  num2Str_Max4L( uint8 *pStr, uint16 num, uint8 len)
 {
     uint16 maxNum = 1;
     for( uint8 i = 1; i <= len; i++ )
@@ -916,8 +970,34 @@ static uint8 *num2Str_Max4L( uint8 *pStr, uint16 num, uint8 len)
 
     *pStr++ = (num / 10) + '0';
     *pStr++ = (num % 10) + '0';
+}
+char *pNum2Str_Max4L( uint16 num, uint8 len)
+{
+    static char strNum[5];
+    char  *pStr = strNum;
+    uint16 maxNum = 1;
+    for( uint8 i = 1; i <= len; i++ )
+    {
+      maxNum *= 10;
+    }
 
-    return pStr;
+    if(num > maxNum)
+    {
+      num %= maxNum;
+    }
+
+    for( uint8 i = 2; i < len; i++)
+    {
+      maxNum /=10;
+      *pStr++ = (num / maxNum) + '0';
+      num %= maxNum;      
+    }
+
+    *pStr++ = (num / 10) + '0';
+    *pStr++ = (num % 10) + '0';
+
+    *pStr++ = '\0';
+    return strNum;
 }
 // << Wayne >> << Digits To Ascii  >> --
 // << Wayne >> <<  Random Number Generator 20 bytes  >> ++
@@ -940,29 +1020,53 @@ uint8 *randomGen_Max20bytes(uint8 len)
 }
 // << Wayne >> <<  Random Number Generator 20 bytes  >> --
 // << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> ++
-uint8 exchange_DHM( uint8 *pNum)
+void dHM_Service( uint8 *pNum)
 {
-    //uint8 data[10];
-    uint32 base = primeBaseNum[(*(pNum + HDM_BASE_INDEX))%PRIME_BASE_NUMBER_SIZE];
-    //num2Str_Max4L( data, (uint16)base, 4);
-    //UART_SEND_DEBUG_MSG( data, 4 );
-    uint32 modulus = primeModulusNum[(*(pNum + HDM_MODULUS_INDEX))%PRIME_MODULUS_NUMBER_SIZE];
-   //num2Str_Max4L( data, (uint16)modulus, 4);
-    //UART_SEND_DEBUG_MSG( data, 4 );
+    uint8 plainText[16] = {0};
+    uint8 encryptedData[16];
+    osal_memcpy( encryptedData, pNum, 16 );
+    osal_memcpy( pNum, randomGen_Max20bytes(SIMPLEPROFILE_CHAR2_LEN), 20 );
+    pNum[0] = exchangeKey_DHM(encryptedData);
+    osal_memcpy( plainText, pNum, 16 );
+    LL_Encrypt( fixAESKey, plainText, encryptedData );
+    osal_memcpy( pNum, encryptedData, 16 );
+}
+uint8 exchangeKey_DHM( uint8 *encryptedData)
+{
+    uint8 plaintextData[16]={0};
+    LL_EXT_Decrypt( fixAESKey, encryptedData, plaintextData );
+    uint32 base = primeBaseNum[ (*( plaintextData + HDM_BASE_INDEX ))% PRIME_BASE_NUMBER_SIZE ];
+    uint32 base2 = *( plaintextData + HDM_QUOTIENT_INDEX );
+    uint32 modulus = primeModulusNum[ (*(plaintextData + HDM_MODULUS_INDEX ))% PRIME_MODULUS_NUMBER_SIZE ];
     uint32 quotient;
-    uint32  computesBase = 1;
+    uint8 secretKey;
+    uint32 computesBase = 1;
+    uint32 computesBase2 = 1;
      for( uint8 i = 0; i < HDM_PRIVATE_KEY; i++ )
      {
        computesBase *= base;
+       computesBase2 *= base2;
      }
     
      quotient = ( computesBase % modulus );
+     secretKey = ( computesBase2 % modulus );
+    #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( pNum2Str_Max4L(base,4),  HAL_LCD_LINE_5 );
+          HalLcdWriteString( pNum2Str_Max4L(modulus,4),  HAL_LCD_LINE_6 );
+          HalLcdWriteString( pNum2Str_Max4L(quotient,4),  HAL_LCD_LINE_7);
+          HalLcdWriteString( pNum2Str_Max4L(secretKey,4),  HAL_LCD_LINE_7);
+    #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
-    //num2Str_Max4L( data, (uint16)quotient, 4);
-    //UART_SEND_DEBUG_MSG( data, 4 );
-    //UART_SEND_DEBUG_MSG( "\r\n", 2 );
      return quotient;
 }
 // << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> --
+// << Wayne >> << AES En-Decrypt  >> ++
+/*
+void decrypt_AES(uint8* key, uint8* encryptedData, uint8* plaintextData)
+{
+    LL_EXT_Decrypt( key, encryptedData, plaintextData );
+}
+*/
+// << Wayne >> << AES En-Decrypt  >> --
 /*********************************************************************
 *********************************************************************/

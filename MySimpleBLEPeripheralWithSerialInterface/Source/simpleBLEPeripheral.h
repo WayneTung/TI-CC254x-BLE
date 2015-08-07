@@ -84,9 +84,10 @@ extern "C"
 // << Wayne >> << dBCmd >> --
 
 // << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> ++
-#define HDM_PRIVATE_KEY              6
-#define HDM_BASE_INDEX                6
-#define HDM_MODULUS_INDEX     10
+#define HDM_PRIVATE_KEY              3
+#define HDM_BASE_INDEX                5
+#define HDM_MODULUS_INDEX      9
+#define HDM_QUOTIENT_INDEX      12
 // << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> --
 #define PRIME_NUMBER_SIZE     54
 #define PRIME_NUMBER  251, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101,\
@@ -95,10 +96,13 @@ extern "C"
 #define PRIME_BASE_NUMBER_SIZE     12
 #define PRIME_BASE_NUMBER  37, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31
 
- #define PRIME_MODULUS_NUMBER_SIZE    42
- #define PRIME_MODULUS_NUMBER  251, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101,\
- 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229,\
- 233, 239, 241
+ #define PRIME_MODULUS_NUMBER_SIZE    11
+ #define PRIME_MODULUS_NUMBER  83, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79
+
+ // << Wayne >> << AES En-Decrypt  >> ++
+ #define AES_FIX_KEY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+ #define AES_DYN_KEY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+ // << Wayne >> << AES En-Decrypt  >> --
 /*********************************************************************
  * MACROS
  */
