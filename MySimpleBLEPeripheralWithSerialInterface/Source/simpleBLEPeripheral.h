@@ -22,7 +22,7 @@
   its documentation for any purpose.
 
   YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-  PROVIDED ìAS ISî WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  PROVIDED ‚ÄúAS IS‚Äù WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
   INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
   NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
   TEXAS INSTRUMENTS OR ITS LICENSORS BE LIABLE OR OBLIGATED UNDER CONTRACT,
@@ -63,7 +63,7 @@ extern "C"
 // << Wayne >> <<  Check Connect  Overtime> > ++
 #define SBP_CONNECT_OVERTIME_EVT               0x0020
 // << Wayne >> <<  Check Connect  Overtime> > --
-
+// 
 // << Wayne >> << 128-bit UUID  >> ++
 #define DB_UUID_C    0x0001
 #define DB_UUID_A    0x0001    
@@ -77,10 +77,12 @@ extern "C"
 #define dB_DevID(id)       {0xFF, 0xDB, HI_UINT16(id), LO_UINT16(id), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 // << Wayne >> << Device D >> --
 // << Wayne >> << dBCmd >> ++
-#define DBCMD_COMFIRM_TICKET                          "s,et,01,dic,"
-#define DBCMD_COMFIRM_TICKET_LEN                  12
+#define DBCMD_COMFIRM_TICKET                          "s,etd,001,"
+#define DBCMD_COMFIRM_TICKET_LEN                  10
 #define DBCMD_READ_EXCHANGE_NUMBER          "s,et,01,rct,"
-#define DBCMD_READ_EXCHANGE_NUMBER_LEN  12      
+#define DBCMD_READ_EXCHANGE_NUMBER_LEN  12    
+#define DBCMD_VERTIFY_DEVICE                           "s,str,"  
+#define DBCMD_VERTIFY_DEVICE_LEN                   6
 // << Wayne >> << dBCmd >> --
 
 // << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> ++
@@ -88,7 +90,8 @@ extern "C"
 #define HDM_BASE_INDEX                5
 #define HDM_MODULUS_INDEX      9
 #define HDM_QUOTIENT_INDEX      12
-// << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> --
+#define HDM_START_KEY_INDEX 13
+
 #define PRIME_NUMBER_SIZE     54
 #define PRIME_NUMBER  251, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101,\
  103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229,\
@@ -98,11 +101,21 @@ extern "C"
 
  #define PRIME_MODULUS_NUMBER_SIZE    11
  #define PRIME_MODULUS_NUMBER  83, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79
-
+// << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> --
  // << Wayne >> << AES En-Decrypt  >> ++
  #define AES_FIX_KEY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
  #define AES_DYN_KEY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
  // << Wayne >> << AES En-Decrypt  >> --
+ // 
+// << Wayne >> << Vertify Process  >> ++
+enum
+{
+  DB_CONNECT_VERTIFY_RESTART= 0x00,            //
+  
+  DB_CONNECT_VERTIFY_DH,            
+  DB_CONNECT_VERTIFY_OK
+} ;                 
+// << Wayne >> << Vertify Process  >> --
 /*********************************************************************
  * MACROS
  */

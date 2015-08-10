@@ -81,7 +81,7 @@
  */
 
 // How often to perform periodic event
-#define SBP_PERIODIC_EVT_PERIOD                   10000
+#define SBP_PERIODIC_EVT_PERIOD                   1000
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
 #define DEFAULT_ADVERTISING_INTERVAL          160
@@ -125,6 +125,11 @@
  // How often to Check connect  overtime event
 #define SBP_CHECK_CONNECT_OVERTIME_DELAY   60000
  // << Wayne >> <<  Check Connect  Overtime >> --
+ // 
+ // << Wayne >> <<  Vertify Connect  Overtime> > ++
+ // How often to Check connect  overtime event
+#define SBP_CHECK_CONNECT_OVERTIME_DELAY   60000
+ // << Wayne >> <<  Vertify Connect  Overtime >> --
 /*********************************************************************
  * TYPEDEFS
  */
@@ -144,11 +149,16 @@
 /*********************************************************************
  * LOCAL VARIABLES
  */
+// << Wayne >> << Vertify Process  >> ++
+static uint8 VertifyStatus = DB_CONNECT_VERTIFY_RESTART;
+// << Wayne >> << Vertify Process  >> --
 static uint8 primeBaseNum[PRIME_BASE_NUMBER_SIZE] = {PRIME_BASE_NUMBER};
 static uint8 primeModulusNum[PRIME_MODULUS_NUMBER_SIZE] = {PRIME_MODULUS_NUMBER};
 // << Wayne >> << AES En-Decrypt  >> ++
 static uint8 fixAESKey[] = {AES_FIX_KEY};
 static uint8 dynAESKey[] = {AES_DYN_KEY};
+static uint8 VertifyKey[] = {0,0,0};
+static uint8 StartKey[]={0,0,0};
 // << Wayne >> << AES En-Decrypt  >> --
 
 static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
@@ -230,6 +240,7 @@ char *pNum2Str_Max4L( uint16 num, uint8 len);
 // << Wayne >> << Digits To Ascii  >> --
 // << Wayne >> <<  Random Number Generator 20 bytes  >> ++
 uint8 *randomGen_Max20bytes(uint8 len);
+void randomGen_Last4bytes(uint8 *pNum);
 // << Wayne >> <<  Random Number Generator 20 bytes  >> --
 // << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> ++
 void dHM_Service( uint8 *pNum);
@@ -620,16 +631,16 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
           HalLcdWriteString( "Advertising",  HAL_LCD_LINE_3 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
-          HalLcdWriteString( "          ",  HAL_LCD_LINE_6 );
+          //HalLcdWriteString( "          ",  HAL_LCD_LINE_6 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
         UART_SEND_DEBUG_MSG( "State > Advertising...\r\n", 24 );
         UART_SEND_STRING("s,dB,disconnect,e\r\n",19);
         // << Wayne >> <<  Check Connect  Overtime> > ++
         osal_stop_timerEx( simpleBLEPeripheral_TaskID, SBP_CONNECT_OVERTIME_EVT );
         // << Wayne >> <<  Check Connect  Overtime> > --
-        // << Wayne >> <<  Random Number Generator 20 bytes  >> ++
-        SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, SIMPLEPROFILE_CHAR2_LEN, randomGen_Max20bytes(SIMPLEPROFILE_CHAR2_LEN) );
-        // << Wayne >> <<  Random Number Generator 20 bytes  >> --
+        // << Wayne >> << Vertify Process  >> ++
+        VertifyStatus = DB_CONNECT_VERTIFY_RESTART;
+        // << Wayne >> << Vertify Process  >> --
     }
     break;
 
@@ -739,6 +750,11 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
  */
 static void performPeriodicTask( void )
 {  
+    
+    #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          HalLcdWriteString( pNum2Str_Max4L(VertifyStatus,4),  HAL_LCD_LINE_6 );
+    #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+    
   /*
     uint8 plainText[16] = {0};
     uint8 encryptedData[16];
@@ -790,20 +806,27 @@ static void simpleProfileChangeCB( uint8 paramID )
 
         break;
     case SIMPLEPROFILE_CHAR2:
+        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
+          //HalLcdWriteString( "SIMPLEPROFILE_CHAR2",  HAL_LCD_LINE_4 );
+        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+        // << Wayne >> << Vertify Process  >> ++
+        VertifyStatus = DB_CONNECT_VERTIFY_DH;
+        // << Wayne >> << Vertify Process  >> --
         SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, &data );
+        repeatCmdSendData(data,20);
         dHM_Service(data);
         repeatCmdSendData(data, 20);
         break;
     case SIMPLEPROFILE_CHAR3:
         SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &data );
-        len = data[0];
-        UART_SEND_DEBUG_MSG(&data[1], len);
+        //len = data[0];
+        //UART_SEND_DEBUG_MSG(&data[1], len);
         // << Wayne >> << RepeatCmd >> ++
-        if(repeatCmdSendData(&data[1], len))
+        if(repeatCmdSendData(data,20))
         // << Wayne >> << RepeatCmd >> --
         {
             // << Wayne >> << dBCmd Service  >> ++
-            dBCommand_Service(&data[1]);
+            dBCommand_Service(data);
             // << Wayne >> << dBCmd Service  >> --
         }
         break;
@@ -908,18 +931,39 @@ char *bdAddr2Str( uint8 *pAddr )
 // << Wayne >> << dBCmd Service  >> ++
 void dBCommand_Service(uint8 *pCmd)
 {
-    if(osal_memcmp( pCmd, DBCMD_COMFIRM_TICKET, DBCMD_COMFIRM_TICKET_LEN))
+    uint8 plaintextData[16]={0};
+    uint8 encryptedData[20]={0};
+    LL_EXT_Decrypt( dynAESKey, pCmd, plaintextData );
+    if(VertifyStatus != DB_CONNECT_VERTIFY_OK)
     {
-        repeatCmdSendData("s,et,01,cfm,0005,e",18);
+      if(osal_memcmp( plaintextData, DBCMD_VERTIFY_DEVICE, DBCMD_VERTIFY_DEVICE_LEN))
+      {
+        if(osal_memcmp( &plaintextData[DBCMD_VERTIFY_DEVICE_LEN], VertifyKey, 3))
+        {
+            VertifyStatus = DB_CONNECT_VERTIFY_OK;
+            osal_memcpy( &plaintextData[DBCMD_VERTIFY_DEVICE_LEN], StartKey, 3 );
+            LL_Encrypt( dynAESKey, plaintextData, encryptedData );
+            randomGen_Last4bytes(&encryptedData[16]);
+            repeatCmdSendData(encryptedData,20);
+        }
+      }
+      return;
+    }
+    if(osal_memcmp( plaintextData, DBCMD_COMFIRM_TICKET, DBCMD_COMFIRM_TICKET_LEN))
+    {
+        osal_memcpy( plaintextData, "s,cfm,001,0005,e", 16 );
+        LL_Encrypt( dynAESKey, plaintextData, encryptedData );
+        randomGen_Last4bytes(&encryptedData[16]);
+        repeatCmdSendData(encryptedData,20);
         // << Wayne >> << Exchanging Take >> ++
         dbExchangeCounter++;
         // << Wayne >> << Exchanging Take >> --
-        UART_SEND_STRING(pCmd,19);
+        UART_SEND_STRING(plaintextData,16);
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
-          HalLcdWriteString( "Confirm",  HAL_LCD_LINE_6 );
+          //HalLcdWriteString( "Confirm",  HAL_LCD_LINE_6 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
     }
-    else if(osal_memcmp( pCmd, DBCMD_READ_EXCHANGE_NUMBER, DBCMD_READ_EXCHANGE_NUMBER_LEN))
+    else if(osal_memcmp( plaintextData, DBCMD_READ_EXCHANGE_NUMBER, DBCMD_READ_EXCHANGE_NUMBER_LEN))
     {
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( "ReadCounter",  HAL_LCD_LINE_6 );
@@ -1018,6 +1062,19 @@ uint8 *randomGen_Max20bytes(uint8 len)
 
      return num;
 }
+
+void randomGen_Last4bytes(uint8 *pNum)
+{
+      uint16 randomNum;
+      for( uint8 i = 0; i < 4; i++ )
+     {
+          
+          randomNum = osal_rand();
+
+        *pNum++ = randomNum & 0xFF;
+        //randomNum = randomNum>>4;
+     } 
+}
 // << Wayne >> <<  Random Number Generator 20 bytes  >> --
 // << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> ++
 void dHM_Service( uint8 *pNum)
@@ -1028,6 +1085,7 @@ void dHM_Service( uint8 *pNum)
     osal_memcpy( pNum, randomGen_Max20bytes(SIMPLEPROFILE_CHAR2_LEN), 20 );
     pNum[0] = exchangeKey_DHM(encryptedData);
     osal_memcpy( plainText, pNum, 16 );
+    osal_memcpy( VertifyKey, &plainText[HDM_START_KEY_INDEX], 3 );
     LL_Encrypt( fixAESKey, plainText, encryptedData );
     osal_memcpy( pNum, encryptedData, 16 );
 }
@@ -1038,10 +1096,11 @@ uint8 exchangeKey_DHM( uint8 *encryptedData)
     uint32 base = primeBaseNum[ (*( plaintextData + HDM_BASE_INDEX ))% PRIME_BASE_NUMBER_SIZE ];
     uint32 base2 = *( plaintextData + HDM_QUOTIENT_INDEX );
     uint32 modulus = primeModulusNum[ (*(plaintextData + HDM_MODULUS_INDEX ))% PRIME_MODULUS_NUMBER_SIZE ];
-    uint32 quotient;
+    uint8 quotient;
     uint8 secretKey;
     uint32 computesBase = 1;
     uint32 computesBase2 = 1;
+    osal_memcpy( StartKey, &plaintextData[HDM_START_KEY_INDEX], 3 );
      for( uint8 i = 0; i < HDM_PRIVATE_KEY; i++ )
      {
        computesBase *= base;
@@ -1050,23 +1109,13 @@ uint8 exchangeKey_DHM( uint8 *encryptedData)
     
      quotient = ( computesBase % modulus );
      secretKey = ( computesBase2 % modulus );
+     dynAESKey[12] = secretKey;
     #if (defined HAL_LCD) && (HAL_LCD == TRUE)
-          HalLcdWriteString( pNum2Str_Max4L(base,4),  HAL_LCD_LINE_5 );
-          HalLcdWriteString( pNum2Str_Max4L(modulus,4),  HAL_LCD_LINE_6 );
-          HalLcdWriteString( pNum2Str_Max4L(quotient,4),  HAL_LCD_LINE_7);
-          HalLcdWriteString( pNum2Str_Max4L(secretKey,4),  HAL_LCD_LINE_7);
+          HalLcdWriteString( pNum2Str_Max4L(secretKey,4),  HAL_LCD_LINE_8);
     #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
      return quotient;
 }
 // << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> --
-// << Wayne >> << AES En-Decrypt  >> ++
-/*
-void decrypt_AES(uint8* key, uint8* encryptedData, uint8* plaintextData)
-{
-    LL_EXT_Decrypt( key, encryptedData, plaintextData );
-}
-*/
-// << Wayne >> << AES En-Decrypt  >> --
 /*********************************************************************
 *********************************************************************/
