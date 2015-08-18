@@ -596,7 +596,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
         UART_SEND_DEBUG_MSG( "State > Connected\r\n", 19 );
         // << Wayne >> <<  Check Connect  Overtime> > ++
-        osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_CONNECT_OVERTIME_EVT, SBP_CHECK_CONNECT_OVERTIME_DELAY );
+        //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_CONNECT_OVERTIME_EVT, SBP_CHECK_CONNECT_OVERTIME_DELAY );
         // << Wayne >> <<  Check Connect  Overtime> > --
 
 #ifdef PLUS_BROADCASTER
@@ -698,9 +698,22 @@ static void performPeriodicTask( void )
     uint8 data[20];
     SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, SIMPLEPROFILE_CHAR2_LEN, randomGen_Max20bytes(SIMPLEPROFILE_CHAR2_LEN) );
     SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, &data );
-    data[1] = exchange_DHM(data);
-    SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, SIMPLEPROFILE_CHAR2_LEN, data);
-  
+    //data[1] = exchange_DHM(data);
+    //SimpleProfile_SetParameter( SIMPLEPROFILE_CHAR2, SIMPLEPROFILE_CHAR2_LEN, data);
+    
+       attHandleValueNoti_t noti;      
+    //dummy handle
+    noti.handle = 0x28;
+    noti.len = 20;
+    uint8 i;
+
+    for (i= 0; i < 20; i++)
+    {
+      noti.value[i] = data[i];
+    }
+
+   GATT_Notification(0, &noti, FALSE);
+
     //uint8 valueToCopy = 0x08;
     //uint8 stat;
 
@@ -881,7 +894,7 @@ static bool repeatCmdSendData(uint8* data, uint8 len)
 {
    attHandleValueNoti_t noti;      
   //dummy handle
-  noti.handle = 0x2E;
+  noti.handle = 0x2F;
   noti.len = len;
   uint8 i;
 

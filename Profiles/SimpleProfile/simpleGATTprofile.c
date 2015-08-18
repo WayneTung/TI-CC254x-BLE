@@ -59,7 +59,7 @@
  * CONSTANTS
  */
 
-#define SERVAPP_NUM_ATTR_SUPPORTED        17
+#define SERVAPP_NUM_ATTR_SUPPORTED        18
 
 /*********************************************************************
  * TYPEDEFS
@@ -137,11 +137,15 @@ static uint8 simpleProfileChar1UserDesp[7] = "0xDB01\0";
 
 
 // Simple Profile Characteristic 2 Properties
-static uint8 simpleProfileChar2Props =   GATT_PROP_READ | GATT_PROP_WRITE;
+static uint8 simpleProfileChar2Props =   GATT_PROP_READ | GATT_PROP_WRITE | GATT_PROP_NOTIFY;
 
 // Characteristic 2 Value
 static uint8 simpleProfileChar2[SIMPLEPROFILE_CHAR2_LEN] = {0};
-
+// Simple Profile Characteristic 4 Configuration Each client has its own
+// instantiation of the Client Characteristic Configuration. Reads of the
+// Client Characteristic Configuration only shows the configuration for
+// that client and writes only affect the configuration of that client.
+static gattCharCfg_t simpleProfileChar2Config[GATT_MAX_NUM_CONN];
 // Simple Profile Characteristic 2 User Description
 static uint8 simpleProfileChar2UserDesp[7] = "0xDB02\0";
 
@@ -235,7 +239,13 @@ static gattAttribute_t simpleProfileAttrTbl[SERVAPP_NUM_ATTR_SUPPORTED] =
         0, 
         simpleProfileChar2 
       },
-
+      // Characteristic 4 configuration
+      { 
+        { ATT_BT_UUID_SIZE, clientCharCfgUUID },
+        GATT_PERMIT_READ | GATT_PERMIT_WRITE, 
+        0, 
+        (uint8 *)simpleProfileChar2Config 
+      },
       // Characteristic 2 User Description
       { 
         { ATT_BT_UUID_SIZE, charUserDescUUID },
@@ -370,6 +380,7 @@ bStatus_t SimpleProfile_AddService( uint32 services )
   uint8 status = SUCCESS;
 
   // Initialize Client Characteristic Configuration attributes
+  GATTServApp_InitCharCfg( INVALID_CONNHANDLE, simpleProfileChar2Config );
   GATTServApp_InitCharCfg( INVALID_CONNHANDLE, simpleProfileChar4Config );
 
   // Register with Link DB to receive link status change callback
