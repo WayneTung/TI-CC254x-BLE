@@ -67,7 +67,7 @@ extern "C"
 // << Wayne >> << 128-bit UUID  >> ++
 #define DB_UUID_C    0x0001
 #define DB_UUID_A    0x0001    
-#define DB_UUID_S    0xFFFF                   
+#define DB_UUID_S    0xFFFE                  
 // << Wayne >> << 128-bit UUID  >> --
 
 // << Wayne >> << 128-bit UUID >> ++

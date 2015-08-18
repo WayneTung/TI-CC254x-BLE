@@ -81,7 +81,7 @@
  */
 
 // How often to perform periodic event
-#define SBP_PERIODIC_EVT_PERIOD                   1000
+#define SBP_PERIODIC_EVT_PERIOD                   10000
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
 #define DEFAULT_ADVERTISING_INTERVAL          160
@@ -634,7 +634,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
           //HalLcdWriteString( "          ",  HAL_LCD_LINE_6 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
         UART_SEND_DEBUG_MSG( "State > Advertising...\r\n", 24 );
-        UART_SEND_STRING("s,dB,disconnect,e\r\n",19);
+        //UART_SEND_STRING("s,dB,disconnect,e\r\n",19);
         // << Wayne >> <<  Check Connect  Overtime> > ++
         osal_stop_timerEx( simpleBLEPeripheral_TaskID, SBP_CONNECT_OVERTIME_EVT );
         // << Wayne >> <<  Check Connect  Overtime> > --
@@ -750,11 +750,10 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
  */
 static void performPeriodicTask( void )
 {  
-    
+
     #if (defined HAL_LCD) && (HAL_LCD == TRUE)
-          HalLcdWriteString( pNum2Str_Max4L(VertifyStatus,4),  HAL_LCD_LINE_6 );
+          HalLcdWriteString( pNum2Str_Max4L(dbExchangeCounter,4),  HAL_LCD_LINE_6 );
     #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
-    
   /*
     uint8 plainText[16] = {0};
     uint8 encryptedData[16];
@@ -798,7 +797,6 @@ static void performPeriodicTask( void )
 static void simpleProfileChangeCB( uint8 paramID )
 {
     uint8 data[20];
-    uint8 len;
     switch( paramID )
     {
     case SIMPLEPROFILE_CHAR1:
@@ -806,18 +804,19 @@ static void simpleProfileChangeCB( uint8 paramID )
 
         break;
     case SIMPLEPROFILE_CHAR2:
-        #if (defined HAL_LCD) && (HAL_LCD == TRUE)
-          //HalLcdWriteString( "SIMPLEPROFILE_CHAR2",  HAL_LCD_LINE_4 );
-        #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
         // << Wayne >> << Vertify Process  >> ++
         VertifyStatus = DB_CONNECT_VERTIFY_DH;
         // << Wayne >> << Vertify Process  >> --
+        UART_SEND_DEBUG_MSG( "Action > Char2 Write OK\r\n", 25 );
         SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR2, &data );
         repeatCmdSendData(data,20);
+        UART_SEND_DEBUG_MSG( "Notify > RepeatCmd Char2\r\n", 26 );
         dHM_Service(data);
-        repeatCmdSendData(data, 20);
+        if(repeatCmdSendData(data, 20))
+          UART_SEND_DEBUG_MSG( "Notify > SendCmd Char2\r\n", 26 );
         break;
     case SIMPLEPROFILE_CHAR3:
+        UART_SEND_DEBUG_MSG( "Action > Char3 Write OK\r\n", 25 );
         SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR3, &data );
         //len = data[0];
         //UART_SEND_DEBUG_MSG(&data[1], len);
@@ -825,6 +824,7 @@ static void simpleProfileChangeCB( uint8 paramID )
         if(repeatCmdSendData(data,20))
         // << Wayne >> << RepeatCmd >> --
         {
+            UART_SEND_DEBUG_MSG( "Notify > RepeatCmd Char3\r\n", 26 );
             // << Wayne >> << dBCmd Service  >> ++
             dBCommand_Service(data);
             // << Wayne >> << dBCmd Service  >> --
@@ -944,7 +944,9 @@ void dBCommand_Service(uint8 *pCmd)
             osal_memcpy( &plaintextData[DBCMD_VERTIFY_DEVICE_LEN], StartKey, 3 );
             LL_Encrypt( dynAESKey, plaintextData, encryptedData );
             randomGen_Last4bytes(&encryptedData[16]);
-            repeatCmdSendData(encryptedData,20);
+            UART_SEND_DEBUG_MSG( "State > Device Enable\r\n", 23 );
+            if(repeatCmdSendData(encryptedData,20))
+              UART_SEND_DEBUG_MSG( "Notify > SendCmd Char3\r\n", 26 );
         }
       }
       return;
@@ -954,11 +956,12 @@ void dBCommand_Service(uint8 *pCmd)
         osal_memcpy( plaintextData, "s,cfm,001,0005,e", 16 );
         LL_Encrypt( dynAESKey, plaintextData, encryptedData );
         randomGen_Last4bytes(&encryptedData[16]);
-        repeatCmdSendData(encryptedData,20);
+        if(repeatCmdSendData(encryptedData,20))
+          UART_SEND_DEBUG_MSG( "Notify > SendCmd Char3\r\n", 26 );
         // << Wayne >> << Exchanging Take >> ++
         dbExchangeCounter++;
         // << Wayne >> << Exchanging Take >> --
-        UART_SEND_STRING(plaintextData,16);
+        //UART_SEND_STRING(plaintextData,16);
         #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           //HalLcdWriteString( "Confirm",  HAL_LCD_LINE_6 );
         #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -1101,20 +1104,15 @@ uint8 exchangeKey_DHM( uint8 *encryptedData)
     uint32 computesBase = 1;
     uint32 computesBase2 = 1;
     osal_memcpy( StartKey, &plaintextData[HDM_START_KEY_INDEX], 3 );
-     for( uint8 i = 0; i < HDM_PRIVATE_KEY; i++ )
-     {
+    for( uint8 i = 0; i < HDM_PRIVATE_KEY; i++ )
+    {
        computesBase *= base;
        computesBase2 *= base2;
-     }
-    
-     quotient = ( computesBase % modulus );
-     secretKey = ( computesBase2 % modulus );
-     dynAESKey[12] = secretKey;
-    #if (defined HAL_LCD) && (HAL_LCD == TRUE)
-          HalLcdWriteString( pNum2Str_Max4L(secretKey,4),  HAL_LCD_LINE_8);
-    #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
-
-     return quotient;
+    }   
+    quotient = ( computesBase % modulus );
+    secretKey = ( computesBase2 % modulus );
+    dynAESKey[12] = secretKey;
+    return quotient;
 }
 // << Wayne >> << Diffie-Hellman-Merklekey Exchange  >> --
 /*********************************************************************
