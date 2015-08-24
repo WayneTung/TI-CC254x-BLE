@@ -67,7 +67,7 @@ extern "C"
 // << Wayne >> << 128-bit UUID  >> ++
 #define DB_UUID_C    0x0001
 #define DB_UUID_A    0x0001    
-#define DB_UUID_S    0xFFFE                  
+#define DB_UUID_S    0xFFFF                  
 // << Wayne >> << 128-bit UUID  >> --
 
 // << Wayne >> << 128-bit UUID >> ++
@@ -123,7 +123,7 @@ enum
 #if defined (SERIAL_INTERFACE)
 #define UART_SEND_STRING(str, len)                      sendSerialString( (str), (len))
   #if UART_DEBUG_MSG == TRUE
-  #define UART_SEND_DEBUG_MSG(str, len)            sendSerialString( "[DMSG] ", 7 ); sendSerialString( (str), (len))
+  #define UART_SEND_DEBUG_MSG(str, len)            sendSerialString( (str), (len))
   #else
   #define UART_SEND_DEBUG_MSG(str, len)             
   #endif

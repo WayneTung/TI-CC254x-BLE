@@ -27,7 +27,7 @@ jackalchen737@gmail.com
 #define APP_EVT_LOG             0x82
 
 //C Queue
-#define TXQ_SIZE    10
+#define TXQ_SIZE    16
 
 typedef struct _BLEPacketHeader
 {

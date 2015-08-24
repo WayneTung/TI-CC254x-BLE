@@ -249,6 +249,7 @@ uint8 exchangeKey_DHM( uint8 *encryptedData);
 #if (defined HAL_LCD) && (HAL_LCD == TRUE)
 static char *bdAddr2Str ( uint8 *pAddr );
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
+char *bdHex2Str( uint8 *pHex );
 /*********************************************************************
  * PROFILE CALLBACKS
  */
@@ -496,7 +497,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     if ( events & SBP_START_DEVICE_EVT )
     {
         // << Wayne >> << -23dB TX Power >> ++
-        HCI_EXT_SetTxPowerCmd(LL_EXT_TX_POWER_MINUS_23_DBM);
+        HCI_EXT_SetTxPowerCmd(LL_EXT_TX_POWER_4_DBM);
         // << Wayne >> << -23dB TX Power >> --
         // Start the Device
         VOID GAPRole_StartDevice( &simpleBLEPeripheral_PeripheralCBs );
@@ -750,7 +751,6 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
  */
 static void performPeriodicTask( void )
 {  
-
     #if (defined HAL_LCD) && (HAL_LCD == TRUE)
           HalLcdWriteString( pNum2Str_Max4L(dbExchangeCounter,4),  HAL_LCD_LINE_6 );
     #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
@@ -813,7 +813,7 @@ static void simpleProfileChangeCB( uint8 paramID )
         UART_SEND_DEBUG_MSG( "Notify > RepeatCmd Char2\r\n", 26 );
         dHM_Service(data);
         if(repeatCmdSendData(data, 20))
-          UART_SEND_DEBUG_MSG( "Notify > SendCmd Char2\r\n", 26 );
+          UART_SEND_DEBUG_MSG( "Notify > SendCmd Char2\r\n", 24 );
         break;
     case SIMPLEPROFILE_CHAR3:
         UART_SEND_DEBUG_MSG( "Action > Char3 Write OK\r\n", 25 );
@@ -928,12 +928,44 @@ char *bdAddr2Str( uint8 *pAddr )
 }
 #endif // (defined HAL_LCD) && (HAL_LCD == TRUE)
 
+char *bdHex2Str( uint8 *pHex )
+{
+  uint8       i;
+  char        hex[] = "0123456789ABCDEF";
+  static char str[36];
+  char        *pStr = str;
+
+  *pStr++ = '0';
+  *pStr++ = 'x';
+
+  // Start from end of addr
+  //pAddr += 16;
+
+  for ( i = 16; i > 0; i-- )
+  {
+    *pStr++ = hex[*pHex >> 4];
+    *pStr++ = hex[*pHex & 0x0F];
+    pHex++;
+  }
+
+  *pStr = '\r';
+  *(pStr + 1) = '\n';
+
+  return str;
+}
+
 // << Wayne >> << dBCmd Service  >> ++
 void dBCommand_Service(uint8 *pCmd)
 {
     uint8 plaintextData[16]={0};
     uint8 encryptedData[20]={0};
+    //UART_SEND_DEBUG_MSG( "Action > Encrypt Char3 ", 23 );
+    UART_SEND_STRING(bdHex2Str(pCmd),34);
+    //UART_SEND_STRING("\r\n",2);
     LL_EXT_Decrypt( dynAESKey, pCmd, plaintextData );
+    //UART_SEND_DEBUG_MSG( "Action > Plain Char3 ", 21 );
+    //UART_SEND_STRING(plaintextData,16);
+    //UART_SEND_STRING("\r\n",2);
     if(VertifyStatus != DB_CONNECT_VERTIFY_OK)
     {
       if(osal_memcmp( plaintextData, DBCMD_VERTIFY_DEVICE, DBCMD_VERTIFY_DEVICE_LEN))
@@ -946,7 +978,7 @@ void dBCommand_Service(uint8 *pCmd)
             randomGen_Last4bytes(&encryptedData[16]);
             UART_SEND_DEBUG_MSG( "State > Device Enable\r\n", 23 );
             if(repeatCmdSendData(encryptedData,20))
-              UART_SEND_DEBUG_MSG( "Notify > SendCmd Char3\r\n", 26 );
+              UART_SEND_DEBUG_MSG( "Notify > SendCmd Char3\r\n", 24 );
         }
       }
       return;
@@ -957,7 +989,7 @@ void dBCommand_Service(uint8 *pCmd)
         LL_Encrypt( dynAESKey, plaintextData, encryptedData );
         randomGen_Last4bytes(&encryptedData[16]);
         if(repeatCmdSendData(encryptedData,20))
-          UART_SEND_DEBUG_MSG( "Notify > SendCmd Char3\r\n", 26 );
+          UART_SEND_DEBUG_MSG( "Notify > SendCmd Char3\r\n", 24 );
         // << Wayne >> << Exchanging Take >> ++
         dbExchangeCounter++;
         // << Wayne >> << Exchanging Take >> --
